@@ -153,3 +153,5 @@ section, and setup steps. Record a 2-minute demo video.
 - Keep costs low: small Snowflake warehouse, auto-suspend, cache schema context.
 - Write tests for the SQL validator and warehouse layer.
 - No em dashes in docs or UI text.
+- After every Phase 2 fix, re-run the showcase questions and add an 'after' entry next to each 'before' entry in evals/showcase.md.
+- Never overwrite `evals/results/baseline/`. Files there are frozen; new baseline files may only be added.

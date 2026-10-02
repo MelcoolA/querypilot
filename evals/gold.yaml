@@ -1,0 +1,504 @@
+# Gold set for the Olist dataset (DATASET=olist).
+#
+# Each question has one hand-written gold SQL. The eval runs the agent's SQL and
+# the gold SQL and compares result sets (order-insensitive, floats rounded).
+#
+# Business definitions the gold SQL follows. The agent is NOT told these in the
+# baseline run; they are what the semantic layer will add later.
+#   customer        = customers.customer_unique_id (customer_id is new on every order)
+#   order count     = COUNT(DISTINCT order_id), never payment or item rows
+#   revenue         = SUM(order_items.price), excludes freight
+#   order date      = orders.order_purchase_timestamp
+#   delivered order = order_status = 'delivered' AND order_delivered_customer_date IS NOT NULL
+#   delivery time   = days (fractional) from order_purchase_timestamp to order_delivered_customer_date
+#   late delivery   = delivered order where order_delivered_customer_date > order_estimated_delivery_date
+#
+# Traps (tags): customer_unique_id, payment_rows, revenue, late_delivery,
+#               comparison, date_math, fanout (joins that duplicate rows)
+#
+# Gold queries return only the columns the question asks for. Where a label
+# column is needed (state, category, month), it is included.
+
+dataset: olist
+
+questions:
+
+  # ---------------------------------------------------------------- easy (12)
+
+  - id: e01
+    difficulty: easy
+    question: How many orders were delivered?
+    traps: []
+    sql: |
+      SELECT COUNT(*) AS delivered_orders
+      FROM orders
+      WHERE order_status = 'delivered'
+
+  - id: e02
+    difficulty: easy
+    question: What is the average review score?
+    traps: []
+    sql: |
+      SELECT AVG(review_score) AS avg_review_score
+      FROM order_reviews
+
+  - id: e03
+    difficulty: easy
+    question: How many unique customers are there?
+    traps: [customer_unique_id]
+    sql: |
+      SELECT COUNT(DISTINCT customer_unique_id) AS customers
+      FROM customers
+
+  - id: e04
+    difficulty: easy
+    question: How many sellers are there?
+    traps: []
+    sql: |
+      SELECT COUNT(*) AS sellers
+      FROM sellers
+
+  - id: e05
+    difficulty: easy
+    question: How many orders were canceled?
+    traps: []
+    sql: |
+      SELECT COUNT(*) AS canceled_orders
+      FROM orders
+      WHERE order_status = 'canceled'
+
+  - id: e06
+    difficulty: easy
+    question: How many orders are there in each order status?
+    traps: []
+    sql: |
+      SELECT order_status, COUNT(*) AS orders
+      FROM orders
+      GROUP BY order_status
+
+  - id: e07
+    difficulty: easy
+    question: What is the average price of an order item?
+    traps: []
+    sql: |
+      SELECT AVG(price) AS avg_item_price
+      FROM order_items
+
+  - id: e08
+    difficulty: easy
+    question: How many products are in the health and beauty category?
+    traps: []
+    sql: |
+      SELECT COUNT(*) AS products
+      FROM products
+      WHERE product_category = 'health_beauty'
+
+  - id: e09
+    difficulty: easy
+    question: What percentage of reviews have a score of 5?
+    traps: []
+    sql: |
+      SELECT 100.0 * AVG(CASE WHEN review_score = 5 THEN 1 ELSE 0 END) AS pct_five_star
+      FROM order_reviews
+
+  - id: e10
+    difficulty: easy
+    question: How many orders were placed in 2018?
+    traps: [date_math]
+    sql: |
+      SELECT COUNT(*) AS orders
+      FROM orders
+      WHERE YEAR(order_purchase_timestamp) = 2018
+
+  - id: e11
+    difficulty: easy
+    question: Which 5 states have the most sellers?
+    traps: []
+    sql: |
+      SELECT seller_state, COUNT(*) AS sellers
+      FROM sellers
+      GROUP BY seller_state
+      ORDER BY sellers DESC
+      LIMIT 5
+
+  - id: e12
+    difficulty: easy
+    question: What is the total freight value across all order items?
+    traps: []
+    sql: |
+      SELECT SUM(freight_value) AS total_freight
+      FROM order_items
+
+  # -------------------------------------------------------------- medium (16)
+
+  - id: m01
+    difficulty: medium
+    question: How many orders were paid by each payment type?
+    traps: [payment_rows]
+    sql: |
+      SELECT payment_type, COUNT(DISTINCT order_id) AS orders
+      FROM order_payments
+      GROUP BY payment_type
+
+  - id: m02
+    difficulty: medium
+    question: Which 5 states have the most customers?
+    traps: [customer_unique_id]
+    sql: |
+      SELECT customer_state, COUNT(DISTINCT customer_unique_id) AS customers
+      FROM customers
+      GROUP BY customer_state
+      ORDER BY customers DESC
+      LIMIT 5
+
+  - id: m03
+    difficulty: medium
+    question: What are the top 5 product categories by revenue?
+    traps: [revenue]
+    sql: |
+      SELECT p.product_category, SUM(oi.price) AS revenue
+      FROM order_items oi
+      JOIN products p ON oi.product_id = p.product_id
+      GROUP BY p.product_category
+      ORDER BY revenue DESC
+      LIMIT 5
+
+  - id: m04
+    difficulty: medium
+    question: Which month had the highest number of orders?
+    traps: [date_math]
+    sql: |
+      SELECT DATE_TRUNC('month', order_purchase_timestamp) AS month, COUNT(*) AS orders
+      FROM orders
+      GROUP BY month
+      ORDER BY orders DESC
+      LIMIT 1
+
+  - id: m05
+    difficulty: medium
+    question: What was the total revenue in each year?
+    traps: [revenue, date_math]
+    sql: |
+      SELECT YEAR(o.order_purchase_timestamp) AS year, SUM(oi.price) AS revenue
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.order_id
+      GROUP BY year
+
+  - id: m06
+    difficulty: medium
+    question: Which 10 sellers have the highest revenue?
+    traps: [revenue]
+    sql: |
+      SELECT seller_id, SUM(price) AS revenue
+      FROM order_items
+      GROUP BY seller_id
+      ORDER BY revenue DESC
+      LIMIT 10
+
+  - id: m07
+    difficulty: medium
+    question: What is the average number of items per order?
+    traps: [fanout]
+    sql: |
+      SELECT COUNT(*) * 1.0 / COUNT(DISTINCT order_id) AS avg_items_per_order
+      FROM order_items
+
+  - id: m08
+    difficulty: medium
+    question: What is the average order value?
+    traps: [revenue, fanout]
+    sql: |
+      SELECT AVG(order_revenue) AS avg_order_value
+      FROM (
+        SELECT order_id, SUM(price) AS order_revenue
+        FROM order_items
+        GROUP BY order_id
+      )
+
+  - id: m09
+    difficulty: medium
+    question: Which 5 product categories appear in the most orders?
+    traps: [fanout]
+    sql: |
+      SELECT p.product_category, COUNT(DISTINCT oi.order_id) AS orders
+      FROM order_items oi
+      JOIN products p ON oi.product_id = p.product_id
+      GROUP BY p.product_category
+      ORDER BY orders DESC
+      LIMIT 5
+
+  - id: m10
+    difficulty: medium
+    question: What is the average number of installments for credit card payments?
+    traps: []
+    sql: |
+      SELECT AVG(payment_installments) AS avg_installments
+      FROM order_payments
+      WHERE payment_type = 'credit_card'
+
+  - id: m11
+    difficulty: medium
+    question: How many customers placed more than one order?
+    traps: [customer_unique_id]
+    sql: |
+      SELECT COUNT(*) AS repeat_customers
+      FROM (
+        SELECT c.customer_unique_id
+        FROM customers c
+        JOIN orders o ON c.customer_id = o.customer_id
+        GROUP BY c.customer_unique_id
+        HAVING COUNT(DISTINCT o.order_id) > 1
+      )
+
+  - id: m12
+    difficulty: medium
+    question: Which 5 cities have the most customers?
+    traps: [customer_unique_id]
+    sql: |
+      SELECT customer_city, COUNT(DISTINCT customer_unique_id) AS customers
+      FROM customers
+      GROUP BY customer_city
+      ORDER BY customers DESC
+      LIMIT 5
+
+  - id: m13
+    difficulty: medium
+    question: Which 5 customer states generated the most revenue?
+    traps: [revenue]
+    sql: |
+      SELECT c.customer_state, SUM(oi.price) AS revenue
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.order_id
+      JOIN customers c ON o.customer_id = c.customer_id
+      GROUP BY c.customer_state
+      ORDER BY revenue DESC
+      LIMIT 5
+
+  - id: m14
+    difficulty: medium
+    question: How many orders were delivered late?
+    traps: [late_delivery]
+    sql: |
+      SELECT COUNT(*) AS late_orders
+      FROM orders
+      WHERE order_status = 'delivered'
+        AND order_delivered_customer_date IS NOT NULL
+        AND order_delivered_customer_date > order_estimated_delivery_date
+
+  - id: m15
+    difficulty: medium
+    question: What is the average total payment per order for credit card versus boleto?
+    traps: [payment_rows, comparison]
+    sql: |
+      SELECT payment_type, AVG(order_total) AS avg_payment_per_order
+      FROM (
+        SELECT order_id, payment_type, SUM(payment_value) AS order_total
+        FROM order_payments
+        WHERE payment_type IN ('credit_card', 'boleto')
+        GROUP BY order_id, payment_type
+      )
+      GROUP BY payment_type
+
+  - id: m16
+    difficulty: medium
+    question: How many orders were placed each month in 2017?
+    traps: [date_math]
+    sql: |
+      SELECT DATE_TRUNC('month', order_purchase_timestamp) AS month, COUNT(*) AS orders
+      FROM orders
+      WHERE YEAR(order_purchase_timestamp) = 2017
+      GROUP BY month
+
+  # ---------------------------------------------------------------- hard (12)
+
+  - id: h01
+    difficulty: hard
+    question: What is the average delivery time in days by state?
+    traps: [date_math]
+    sql: |
+      SELECT c.customer_state,
+             AVG(DATE_DIFF('second', o.order_purchase_timestamp, o.order_delivered_customer_date) / 86400.0)
+               AS avg_delivery_days
+      FROM orders o
+      JOIN customers c ON o.customer_id = c.customer_id
+      WHERE o.order_status = 'delivered'
+        AND o.order_delivered_customer_date IS NOT NULL
+      GROUP BY c.customer_state
+
+  - id: h02
+    difficulty: hard
+    question: Do late deliveries get worse reviews?
+    traps: [late_delivery, comparison]
+    sql: |
+      SELECT o.order_delivered_customer_date > o.order_estimated_delivery_date AS is_late,
+             AVG(r.review_score) AS avg_review_score
+      FROM orders o
+      JOIN order_reviews r ON o.order_id = r.order_id
+      WHERE o.order_status = 'delivered'
+        AND o.order_delivered_customer_date IS NOT NULL
+      GROUP BY is_late
+
+  - id: h03
+    difficulty: hard
+    question: What percentage of delivered orders arrived late?
+    traps: [late_delivery]
+    sql: |
+      SELECT 100.0 * AVG(CASE WHEN order_delivered_customer_date > order_estimated_delivery_date
+                              THEN 1 ELSE 0 END) AS pct_late
+      FROM orders
+      WHERE order_status = 'delivered'
+        AND order_delivered_customer_date IS NOT NULL
+
+  - id: h04
+    difficulty: hard
+    question: Which 5 customer states have the highest percentage of late deliveries, among states with at least 500 delivered orders?
+    traps: [late_delivery, comparison]
+    sql: |
+      SELECT c.customer_state,
+             100.0 * AVG(CASE WHEN o.order_delivered_customer_date > o.order_estimated_delivery_date
+                              THEN 1 ELSE 0 END) AS pct_late
+      FROM orders o
+      JOIN customers c ON o.customer_id = c.customer_id
+      WHERE o.order_status = 'delivered'
+        AND o.order_delivered_customer_date IS NOT NULL
+      GROUP BY c.customer_state
+      HAVING COUNT(*) >= 500
+      ORDER BY pct_late DESC
+      LIMIT 5
+
+  - id: h05
+    difficulty: hard
+    question: For each month from January to August 2018, how many orders were placed and what was the percentage change from the previous month?
+    traps: [date_math]
+    sql: |
+      WITH monthly AS (
+        SELECT DATE_TRUNC('month', order_purchase_timestamp) AS month, COUNT(*) AS orders
+        FROM orders
+        GROUP BY month
+      ),
+      with_prev AS (
+        SELECT month, orders,
+               100.0 * (orders - LAG(orders) OVER (ORDER BY month)) / LAG(orders) OVER (ORDER BY month)
+                 AS pct_change
+        FROM monthly
+      )
+      SELECT month, orders, pct_change
+      FROM with_prev
+      WHERE month BETWEEN DATE '2018-01-01' AND DATE '2018-08-01'
+
+  - id: h06
+    difficulty: hard
+    question: What percentage of customers have placed more than one order?
+    traps: [customer_unique_id]
+    sql: |
+      SELECT 100.0 * AVG(CASE WHEN orders > 1 THEN 1 ELSE 0 END) AS pct_repeat_customers
+      FROM (
+        SELECT c.customer_unique_id, COUNT(DISTINCT o.order_id) AS orders
+        FROM customers c
+        JOIN orders o ON c.customer_id = o.customer_id
+        GROUP BY c.customer_unique_id
+      )
+
+  - id: h07
+    difficulty: hard
+    question: Do orders with more than one item get different review scores than single-item orders?
+    traps: [comparison, fanout]
+    sql: |
+      WITH items AS (
+        SELECT order_id, COUNT(*) AS n_items
+        FROM order_items
+        GROUP BY order_id
+      )
+      SELECT i.n_items > 1 AS multi_item, AVG(r.review_score) AS avg_review_score
+      FROM items i
+      JOIN order_reviews r ON i.order_id = r.order_id
+      GROUP BY multi_item
+
+  - id: h08
+    difficulty: hard
+    question: What are the top 5 product categories by revenue in 2018, and what percentage of total 2018 revenue does each represent?
+    traps: [revenue, date_math]
+    sql: |
+      WITH cat AS (
+        SELECT p.product_category, SUM(oi.price) AS revenue
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.order_id
+        JOIN products p ON oi.product_id = p.product_id
+        WHERE YEAR(o.order_purchase_timestamp) = 2018
+        GROUP BY p.product_category
+      )
+      SELECT product_category, revenue, 100.0 * revenue / SUM(revenue) OVER () AS pct_of_total
+      FROM cat
+      ORDER BY revenue DESC
+      LIMIT 5
+
+  - id: h09
+    difficulty: hard
+    question: For customers with at least two orders, what is the average number of days between their first and second order?
+    traps: [customer_unique_id, date_math]
+    sql: |
+      WITH ranked AS (
+        SELECT c.customer_unique_id, o.order_purchase_timestamp AS ts,
+               ROW_NUMBER() OVER (PARTITION BY c.customer_unique_id
+                                  ORDER BY o.order_purchase_timestamp) AS n
+        FROM customers c
+        JOIN orders o ON c.customer_id = o.customer_id
+      )
+      SELECT AVG(DATE_DIFF('second', first.ts, second.ts) / 86400.0) AS avg_days_to_second_order
+      FROM ranked first
+      JOIN ranked second
+        ON first.customer_unique_id = second.customer_unique_id
+       AND first.n = 1 AND second.n = 2
+
+  - id: h10
+    difficulty: hard
+    question: Which 5 product categories have the lowest average review score, among categories with at least 500 reviews?
+    traps: [fanout, comparison]
+    # An order with several items in one category would count its review several
+    # times; DISTINCT keeps one row per (review, order, category).
+    sql: |
+      SELECT product_category, AVG(review_score) AS avg_review_score
+      FROM (
+        SELECT DISTINCT r.review_id, r.order_id, r.review_score, p.product_category
+        FROM order_reviews r
+        JOIN order_items oi ON r.order_id = oi.order_id
+        JOIN products p ON oi.product_id = p.product_id
+        WHERE p.product_category IS NOT NULL
+      )
+      GROUP BY product_category
+      HAVING COUNT(*) >= 500
+      ORDER BY avg_review_score
+      LIMIT 5
+
+  - id: h11
+    difficulty: hard
+    question: By what percentage did revenue grow in Q1 2018 compared with Q1 2017?
+    traps: [revenue, date_math, comparison]
+    sql: |
+      SELECT 100.0 * (
+               SUM(CASE WHEN o.order_purchase_timestamp >= DATE '2018-01-01'
+                         AND o.order_purchase_timestamp <  DATE '2018-04-01' THEN oi.price END)
+             - SUM(CASE WHEN o.order_purchase_timestamp >= DATE '2017-01-01'
+                         AND o.order_purchase_timestamp <  DATE '2017-04-01' THEN oi.price END)
+             ) / SUM(CASE WHEN o.order_purchase_timestamp >= DATE '2017-01-01'
+                           AND o.order_purchase_timestamp <  DATE '2017-04-01' THEN oi.price END)
+               AS revenue_growth_pct
+      FROM order_items oi
+      JOIN orders o ON oi.order_id = o.order_id
+
+  - id: h12
+    difficulty: hard
+    question: What percentage of total revenue comes from the top 10% of sellers by revenue?
+    traps: [revenue]
+    sql: |
+      WITH seller_rev AS (
+        SELECT seller_id, SUM(price) AS revenue
+        FROM order_items
+        GROUP BY seller_id
+      ),
+      ranked AS (
+        SELECT revenue, NTILE(10) OVER (ORDER BY revenue DESC) AS decile
+        FROM seller_rev
+      )
+      SELECT 100.0 * SUM(CASE WHEN decile = 1 THEN revenue END) / SUM(revenue) AS pct_from_top_10pct
+      FROM ranked

@@ -1,4 +1,4 @@
-.PHONY: data data-olist test ask
+.PHONY: data data-olist test ask eval
 
 # Build the local TPC-H database (scale factor 0.1, about 25 MB)
 data:
@@ -13,3 +13,7 @@ test:
 
 ask:
 	python -m backend.cli "$(Q)"
+
+# Run the agent on all gold questions and save results to evals/results/
+eval:
+	python -m evals.run_evals
