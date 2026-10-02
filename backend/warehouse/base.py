@@ -1,0 +1,29 @@
+"""One warehouse interface, multiple backends (DuckDB now, Snowflake in Phase 4)."""
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+
+
+@dataclass
+class QueryResult:
+    columns: list[str]
+    rows: list[tuple]
+
+
+@dataclass
+class TableInfo:
+    name: str
+    columns: list[tuple[str, str]]  # (column name, type)
+    sample: QueryResult = field(default_factory=lambda: QueryResult([], []))
+
+
+class Warehouse(ABC):
+    dialect: str  # sqlglot dialect name, e.g. "duckdb" or "snowflake"
+
+    @abstractmethod
+    def list_tables(self) -> list[str]: ...
+
+    @abstractmethod
+    def describe_table(self, table: str) -> TableInfo: ...
+
+    @abstractmethod
+    def run_query(self, sql: str) -> QueryResult: ...
