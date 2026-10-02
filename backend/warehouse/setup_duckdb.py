@@ -1,17 +1,15 @@
 """Generate the local TPC-H database: python -m backend.warehouse.setup_duckdb"""
-import os
 from pathlib import Path
 
 import duckdb
-from dotenv import load_dotenv
 
-load_dotenv()
+from backend.warehouse import DATASET_PATHS
 
 SCALE_FACTOR = 0.1  # ~150k orders, ~600k lineitems: realistic shape, still fast on a laptop
 
 
 def main() -> None:
-    path = Path(os.getenv("DUCKDB_PATH", "data/tpch.duckdb"))
+    path = Path(DATASET_PATHS["tpch"])
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists():
         print(f"{path} already exists, nothing to do. Delete it to regenerate.")
