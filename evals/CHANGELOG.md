@@ -6,6 +6,7 @@ One entry per change to the agent, with the eval score after it. Dataset: Olist
 | # | Change | Model | Overall | Easy | Medium | Hard | Notes |
 |---|---|---|---|---|---|---|---|
 | 1 | Baseline, no fixes | qwen2.5-coder:7b | 14/40 (35%) | 10/12 | 3/16 | 1/12 | 4 gave up, 43.2s avg, 0.35 repairs avg |
+| 2 | Semantic layer (`semantic/olist.yaml`) | qwen2.5-coder:7b | **29/40 (72%)** | 12/12 | 12/16 | 5/12 | 1 gave up, 40.1s avg, 0.17 repairs avg |
 
 ## 0. Gold set created
 
@@ -44,3 +45,51 @@ Notable patterns:
   freight in order value, m14 counted one late order that is not in
   `delivered` status (7,827 vs 7,826). Both are wrong under the stated
   definitions, which is what the semantic layer will make explicit.
+
+## 2. Semantic layer: 29/40 (72%), up from 14/40
+
+`semantic/olist.yaml` adds business definitions (customer, order count,
+revenue, items per order, order date, delivered order, delivery metrics,
+late delivery, percentage), join paths, where each column lives, per-column
+notes, and the real distinct values of `order_status`, `payment_type`, and
+`product_category` read from the data. `get_schema` puts this above the table
+list. Results: `results/2026-10-02_155842_ollama-qwen2.5-coder-7b_fix1-semantic/`.
+
+| Trap | Baseline | Semantic layer |
+|---|---|---|
+| revenue | 0/8 | 6/8 |
+| customer_unique_id | 0/6 | 4/6 |
+| date_math | 3/9 | 7/9 |
+| late_delivery | 1/4 | 3/4 |
+| comparison | 0/6 | 2/6 |
+| fanout | 0/5 | 2/5 |
+| payment_rows | 0/2 | 0/2 |
+
+What changed:
+- 15 questions fixed, none of the baseline passes lost. Give-ups dropped from
+  4 to 1: three were the agent reading a column from the wrong table, which
+  the column locations now prevent.
+- Still failing (11): m01 m15 (payment rows, despite the definition), m08
+  (average of item prices, not order totals), m11 (grouped but never counted
+  the groups), h01 (nonsense join, then a summary claiming no data exists),
+  h02 h07 (no comparison group), h05 (filtered before LAG), h06 (wrong
+  formula), h10 (gave up, same SQL 3 times), h12 (see below).
+
+Three problems found and fixed while running this step:
+1. **Ollama silently truncated the prompt.** Its default context is 4,096
+   tokens; the new prompt is 4,140, so Ollama dropped about half of it,
+   including the definitions, with no error. Fixed by setting `num_ctx`
+   (`OLLAMA_NUM_CTX=16384` in `.env`). The baseline prompt (2,776 tokens) fit,
+   so the baseline is unaffected. The first run was stopped and discarded.
+2. **My "delivered order" definition was too strict.** It required a delivery
+   date, so the agent followed it literally and answered 96,470 instead of
+   96,478 for e01. Split into "delivered order" (status only) and "delivery
+   metrics" (status plus a delivery date). No gold SQL changed.
+3. **Scorer bug.** m05 returned years as `2016-01-01` instead of `2016`;
+   correct, but scored wrong. The scorer now also matches January 1st dates
+   to plain years. Both runs were re-scored with `python -m evals.rescore`:
+   the baseline is unchanged at 14/40, this run went from 28 to 29.
+
+Open question: h12 ("top 10% of sellers") returned 67.49% vs gold 67.56%.
+The agent took the top 309 of 3,095 sellers, the gold query (NTILE) the top
+310. Both are reasonable readings of "top 10%"; kept as wrong for now.

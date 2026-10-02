@@ -54,3 +54,15 @@ def test_rows_must_pair_correctly():
 
 def test_nulls_compare_equal():
     assert ok([(None, 3)], [(None, 3)])
+
+
+def test_year_as_date_matches_year_as_number():
+    gold = [(2016, 49785.92), (2017, 6155806.98)]
+    agent = [(datetime(2016, 1, 1), 49785.92), (datetime(2017, 1, 1), 6155806.98)]
+    assert ok(gold, agent)
+    # A wrong year still fails.
+    assert not ok(gold, [(datetime(2015, 1, 1), 49785.92), (datetime(2017, 1, 1), 6155806.98)])
+
+
+def test_january_month_still_matches_as_date():
+    assert ok([(datetime(2018, 1, 1), 7269)], [("2018-01", 7269)])

@@ -51,7 +51,7 @@ def main() -> None:
 
     llm = get_llm()
     out_dir = _results_dir(args.baseline, llm.name, args.label)  # fail early, before a long run
-    warehouse = DuckDBWarehouse(DATASET_PATHS[gold["dataset"]])
+    warehouse = DuckDBWarehouse(DATASET_PATHS[gold["dataset"]], dataset=gold["dataset"])
     agent = build_graph(llm, warehouse)
 
     print(f"Running {len(questions)} questions | model {llm.name} | dataset {gold['dataset']}")

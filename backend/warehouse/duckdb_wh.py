@@ -12,7 +12,8 @@ SAMPLE_ROWS = 3
 class DuckDBWarehouse(Warehouse):
     dialect = "duckdb"
 
-    def __init__(self, path: str):
+    def __init__(self, path: str, dataset: str = ""):
+        self.dataset = dataset
         if not Path(path).exists():
             raise FileNotFoundError(f"{path} not found. Run `make data` to generate TPC-H data.")
         # Guardrail 1: the connection itself is read-only, so even if a write

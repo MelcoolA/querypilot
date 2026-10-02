@@ -22,7 +22,7 @@ def get_warehouse() -> Warehouse:
         dataset = os.getenv("DATASET", "tpch").lower()
         if dataset not in DATASET_PATHS:
             raise ValueError(f"Unknown DATASET: {dataset!r} (expected one of {', '.join(DATASET_PATHS)})")
-        return DuckDBWarehouse(DATASET_PATHS[dataset])
+        return DuckDBWarehouse(DATASET_PATHS[dataset], dataset=dataset)
     if backend == "snowflake":
         raise NotImplementedError("Snowflake backend arrives in Phase 4.")
     raise ValueError(f"Unknown WAREHOUSE: {backend!r} (expected 'duckdb' or 'snowflake')")

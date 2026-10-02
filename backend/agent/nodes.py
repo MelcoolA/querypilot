@@ -5,7 +5,7 @@ LangGraph merges those changes into the state for the next node.
 """
 import re
 
-from backend.agent import prompts
+from backend.agent import prompts, semantic
 from backend.agent.state import AgentState
 from backend.formatting import format_table
 from backend.guardrails.sql_validator import validate_sql
@@ -19,12 +19,19 @@ def get_schema(state: AgentState, warehouse: Warehouse) -> dict:
     # TPC-H has only 8 tables, so Phase 1 sends all of them. A real warehouse with
     # hundreds of tables needs a table-selection step here instead.
     tables = warehouse.list_tables()
-    blocks = []
+    sem = semantic.load_semantic(warehouse.dataset)  # None if the dataset has no semantic layer
+    blocks = [semantic.render_header(sem)] if sem else []
     for name in tables:
         info = warehouse.describe_table(name)
-        cols = ", ".join(f"{c} {t}" for c, t in info.columns)
         sample = format_table(info.sample.columns, info.sample.rows)
-        blocks.append(f"TABLE {name} ({cols})\nSample rows:\n{sample}")
+        if sem:
+            description = semantic.table_description(sem, name)
+            columns = semantic.render_columns(sem, name, info.columns, warehouse)
+            header = f"TABLE {name}" + (f": {description}" if description else "")
+            blocks.append(f"{header}\nColumns:\n{columns}\nSample rows:\n{sample}")
+        else:
+            cols = ", ".join(f"{c} {t}" for c, t in info.columns)
+            blocks.append(f"TABLE {name} ({cols})\nSample rows:\n{sample}")
     return {"tables": tables, "schema_context": "\n\n".join(blocks)}
 
 

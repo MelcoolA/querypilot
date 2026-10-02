@@ -9,9 +9,11 @@
 #   order count     = COUNT(DISTINCT order_id), never payment or item rows
 #   revenue         = SUM(order_items.price), excludes freight
 #   order date      = orders.order_purchase_timestamp
-#   delivered order = order_status = 'delivered' AND order_delivered_customer_date IS NOT NULL
+#   delivered order = order_status = 'delivered'
+#   delivery metrics (time, lateness) use delivered orders that also have
+#                     order_delivered_customer_date IS NOT NULL
 #   delivery time   = days (fractional) from order_purchase_timestamp to order_delivered_customer_date
-#   late delivery   = delivered order where order_delivered_customer_date > order_estimated_delivery_date
+#   late delivery   = such an order where order_delivered_customer_date > order_estimated_delivery_date
 #
 # Traps (tags): customer_unique_id, payment_rows, revenue, late_delivery,
 #               comparison, date_math, fanout (joins that duplicate rows)

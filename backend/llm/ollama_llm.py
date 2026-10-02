@@ -5,8 +5,9 @@ from backend.llm.base import LLM, LLMResponse
 
 
 class OllamaLLM(LLM):
-    def __init__(self, model: str, host: str):
+    def __init__(self, model: str, host: str, num_ctx: int):
         self.model = model
+        self.num_ctx = num_ctx
         self.name = f"ollama:{model}"
         self.client = ollama.Client(host=host)
 
@@ -18,7 +19,9 @@ class OllamaLLM(LLM):
                 {"role": "user", "content": prompt},
             ],
             # Temperature 0 makes SQL generation repeatable, which matters for evals.
-            options={"temperature": 0},
+            # Ollama's default context is only 4096 tokens, and it silently drops
+            # part of any longer prompt (losing e.g. the semantic layer). Set it explicitly.
+            options={"temperature": 0, "num_ctx": self.num_ctx},
         )
         return LLMResponse(
             text=response.message.content,

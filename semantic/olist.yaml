@@ -1,0 +1,113 @@
+# Semantic layer for the Olist dataset.
+#
+# Business meaning that the raw schema cannot tell the LLM: what a "customer"
+# or "revenue" means here, which table holds which columns, and how tables
+# join. It is added to the schema context in the get_schema step.
+#
+# Rules here are general business definitions, not answers to specific eval
+# questions. Currency is Brazilian reais (BRL).
+
+definitions:
+  customer: >
+    A customer is a person, identified by customers.customer_unique_id.
+    customers.customer_id is NOT a person: a new customer_id is created for
+    every order. Count customers with COUNT(DISTINCT customers.customer_unique_id).
+    A repeat customer is a customer_unique_id with more than one order.
+  order count: >
+    Count orders with COUNT(DISTINCT order_id) whenever the table has several
+    rows per order (order_items, order_payments, order_reviews). COUNT(*) is
+    only safe on the orders table.
+  revenue: >
+    Revenue is SUM(order_items.price). It excludes freight. Never multiply
+    price by freight_value. Average order value is revenue per order: sum price
+    per order_id first, then average those totals.
+  items per order: >
+    order_items has one row per item. Items per order is
+    COUNT(*) / COUNT(DISTINCT order_id) on order_items. order_item_id is the
+    item's position within its order (1, 2, 3), not a quantity.
+  order date: >
+    The date of an order is orders.order_purchase_timestamp. Use it for any
+    year, quarter, or month question. For date ranges use half-open intervals,
+    e.g. order_purchase_timestamp >= '2017-01-01' AND order_purchase_timestamp < '2017-04-01'.
+  delivered order: >
+    order_status = 'delivered'. Use this alone to count delivered orders.
+  delivery metrics: >
+    For delivery time or lateness, use delivered orders that also have a
+    delivery date: order_status = 'delivered' AND order_delivered_customer_date IS NOT NULL.
+  delivery time: >
+    Days from purchase to delivery, as a fraction:
+    DATE_DIFF('second', order_purchase_timestamp, order_delivered_customer_date) / 86400.0.
+  late delivery: >
+    An order (see delivery metrics) where order_delivered_customer_date > order_estimated_delivery_date.
+  percentage: >
+    Report percentages on a 0 to 100 scale: 100.0 * part / whole.
+
+# Where columns live, and how to join. Prevents e.g. reading customer_state from orders.
+joins:
+  - orders.customer_id = customers.customer_id
+  - order_items.order_id = orders.order_id
+  - order_items.product_id = products.product_id
+  - order_items.seller_id = sellers.seller_id
+  - order_payments.order_id = orders.order_id
+  - order_reviews.order_id = orders.order_id
+  - customers.customer_zip_code_prefix = geolocation.zip_code_prefix
+column_locations: >
+  The orders table has no location, price, product, or seller columns.
+  Customer state and city are in customers. Price, freight, product_id, and
+  seller_id are in order_items. Seller state and city are in sellers.
+  Product category is in products.
+
+tables:
+  orders:
+    description: One row per order, with its status and lifecycle timestamps.
+    columns:
+      customer_id: Join key to customers. Not a person; unique per order.
+      order_status:
+        note: Current status of the order.
+        list_values: true
+      order_estimated_delivery_date: Delivery date promised to the customer at purchase.
+
+  order_items:
+    description: One row per item in an order. An order can have several items, from different sellers.
+    columns:
+      order_item_id: Position of the item within its order (1, 2, 3). Not a quantity.
+      price: Item price in BRL, excluding freight.
+      freight_value: Shipping cost for this item in BRL.
+
+  order_payments:
+    description: One row per payment. One order can have several payments (split payments, vouchers).
+    columns:
+      payment_sequential: Payment number within the order.
+      payment_type:
+        note: How this payment was made.
+        list_values: true
+      payment_installments: Number of installments the payment is split into.
+      payment_value: Amount of this payment in BRL.
+
+  order_reviews:
+    description: One row per customer review of an order (score 1 to 5).
+    columns:
+      review_score: Satisfaction score from 1 (worst) to 5 (best).
+
+  customers:
+    description: One row per customer_id, which means one row per order. The real person is customer_unique_id.
+    columns:
+      customer_unique_id: The real customer (person). Use this to count customers.
+      customer_state: Two-letter Brazilian state code, e.g. 'SP'.
+      customer_city: City name in lowercase, e.g. 'sao paulo'.
+
+  products:
+    description: One row per product.
+    columns:
+      product_category:
+        note: Category name in English. Use this column for categories.
+        list_values: true
+      product_category_name_pt: Original Portuguese category name. Do not use in answers.
+
+  sellers:
+    description: One row per seller.
+    columns:
+      seller_state: Two-letter Brazilian state code of the seller.
+
+  geolocation:
+    description: One row per zip code prefix with average coordinates.

@@ -18,6 +18,7 @@ class TableInfo:
 
 class Warehouse(ABC):
     dialect: str  # sqlglot dialect name, e.g. "duckdb" or "snowflake"
+    dataset: str = ""  # e.g. "olist"; picks the semantic layer file, if one exists
 
     @abstractmethod
     def list_tables(self) -> list[str]: ...

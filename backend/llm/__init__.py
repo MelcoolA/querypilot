@@ -16,6 +16,7 @@ def get_llm() -> LLM:
         return OllamaLLM(
             model=_require("OLLAMA_MODEL"),
             host=os.getenv("OLLAMA_HOST", "http://localhost:11434"),
+            num_ctx=int(os.getenv("OLLAMA_NUM_CTX", "16384")),
         )
     if provider == "anthropic":
         from backend.llm.anthropic_llm import AnthropicLLM

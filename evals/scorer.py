@@ -6,6 +6,8 @@ Rules (kept lenient on format, strict on numbers):
   Extra agent columns are fine, but every gold column must be present.
 - Numbers are rounded to 2 decimals; dates and timestamps become 'YYYY-MM-DD';
   month strings like '2017-11' become '2017-11-01'.
+- A column of January 1st dates also matches plain years (2017-01-01 vs 2017),
+  since DATE_TRUNC('year', ...) and YEAR(...) are both valid ways to answer.
 - Boolean gold columns (e.g. is_late) are not compared, because the agent may
   label groups as 'late' / 'on time' instead. The numeric columns next to
   them must still match, so the groups' values are still checked.
@@ -43,6 +45,20 @@ def normalize(value):
     return value
 
 
+def _add_year_columns(rows: list[tuple]) -> list[tuple]:
+    """For each column holding only Jan 1st dates, append a copy as plain years.
+
+    Appending (instead of replacing) keeps the date form available too, so a
+    month column that happens to be '2017-01-01' still matches a date gold column.
+    """
+    extra = []
+    for j in range(len(rows[0])):
+        values = [r[j] for r in rows]
+        if all(isinstance(v, str) and re.match(r"^\d{4}-01-01$", v) for v in values):
+            extra.append(j)
+    return [r + tuple(float(r[j][:4]) for j in extra) for r in rows]
+
+
 def results_match(gold_rows: list[tuple], agent_rows: list[tuple]) -> tuple[bool, str]:
     """Return (match, reason). The reason explains a mismatch in one line."""
     if len(gold_rows) != len(agent_rows):
@@ -56,6 +72,7 @@ def results_match(gold_rows: list[tuple], agent_rows: list[tuple]) -> tuple[bool
     # Drop boolean label columns from the gold side (see module docstring).
     keep = [j for j in range(len(gold[0])) if not all(isinstance(r[j], bool) or r[j] is None for r in gold)]
     gold = [tuple(r[j] for j in keep) for r in gold]
+    agent = _add_year_columns(agent)
     n_gold, n_agent = len(keep), len(agent[0])
     if n_gold == 0:
         return True, "only label columns"
