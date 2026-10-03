@@ -1,4 +1,6 @@
-"""Turn query results into a plain-text table (used by the CLI and the summarize prompt)."""
+"""Turn query results into text and JSON (CLI, API, MCP server, prompts)."""
+from datetime import date, datetime
+from decimal import Decimal
 
 
 def format_table(columns: list[str], rows: list[tuple], max_rows: int = 20) -> str:
@@ -39,4 +41,13 @@ def _cell(value) -> str:
         return "NULL"
     if isinstance(value, float):
         return f"{value:,.2f}"
+    return str(value)
+
+
+def json_value(value):
+    """Make a database value JSON-safe: Decimal to float, dates to ISO strings."""
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
     return str(value)

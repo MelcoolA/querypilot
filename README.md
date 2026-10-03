@@ -10,7 +10,8 @@ own errors, and explains the answer, always showing the SQL it ran.
 ![QueryPilot answering "Which 5 customer states generated the most revenue?": the agent's steps, then a bar chart](docs/images/ui-bar-chart.png)
 
 > **Status:** the agent, guardrails, semantic layer, evals, streaming API, and
-> web UI run on local DuckDB or on Snowflake. Deployment is next.
+> web UI run on local DuckDB or on Snowflake, and an MCP server makes the
+> agent available to Claude Desktop. Deployment is next.
 
 ## Results
 
@@ -66,6 +67,8 @@ flowchart LR
     WH --> D2[(DuckDB<br/>TPC-H)]
     WH --> SF[(Snowflake<br/>Olist, read-only role)]
     AG -.-> LS[LangSmith<br/>traces, optional]
+    MC([Claude Desktop or any<br/>MCP client]) --> MCP[MCP server<br/>backend/mcp_server.py]
+    MCP --> AG
 ```
 
 Two small interfaces keep the agent independent of its providers. Every agent
@@ -366,6 +369,41 @@ happen, then the result in four tabs:
 
 The status badge shows the model, the dataset, and whether the local model
 has finished warming up.
+
+### Use it from Claude Desktop (MCP)
+
+`backend/mcp_server.py` exposes QueryPilot as four read-only tools that any
+MCP client can call:
+
+| Tool | What it does |
+|---|---|
+| `ask` | The full agent: business question in, answer plus the SQL that ran out. Applies the semantic layer's definitions. |
+| `list_tables` | Tables with a one-line business description |
+| `describe_table` | Columns, types, business notes, and sample rows |
+| `run_query` | One read-only SELECT, behind the same guardrails as the agent |
+
+`run_query` lets the calling assistant write its own SQL, which skips the
+semantic layer (for example, revenue excludes freight). The tool
+descriptions steer business questions to `ask` for that reason.
+
+To connect Claude Desktop, add this to
+`~/Library/Application Support/Claude/claude_desktop_config.json` (use your
+own paths) and restart Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "querypilot": {
+      "command": "/path/to/conda/envs/warehouse-agent/bin/python",
+      "args": ["/path/to/warehouse-agent/backend/mcp_server.py"],
+      "env": { "PYTHONPATH": "/path/to/warehouse-agent" }
+    }
+  }
+}
+```
+
+The model and warehouse come from `.env`, as everywhere else. With the local
+model, the server warms it up in the background when the client starts it.
 
 ### Run the evals and tests
 

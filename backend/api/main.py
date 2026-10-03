@@ -11,8 +11,6 @@ import sys
 import threading
 import time
 from contextlib import asynccontextmanager
-from datetime import date, datetime
-from decimal import Decimal
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,7 +19,7 @@ from pydantic import BaseModel, Field
 
 from backend.agent.graph import build_graph
 from backend.agent.warmup import needs_warm_up, warm_up
-from backend.formatting import describe_step
+from backend.formatting import describe_step, json_value
 from backend.llm import LLM, get_llm
 from backend.warehouse import Warehouse, get_warehouse
 
@@ -138,13 +136,4 @@ def _stream_answer(agent, lock: threading.Lock, question: str, model: str):
 
 
 def _event(name: str, data: dict) -> str:
-    return f"event: {name}\ndata: {json.dumps(data, default=_json_value)}\n\n"
-
-
-def _json_value(value):
-    """Make database values JSON-safe: Decimal to float, dates to ISO strings."""
-    if isinstance(value, Decimal):
-        return float(value)
-    if isinstance(value, (date, datetime)):
-        return value.isoformat()
-    return str(value)
+    return f"event: {name}\ndata: {json.dumps(data, default=json_value)}\n\n"

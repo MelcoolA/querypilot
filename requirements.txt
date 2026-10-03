@@ -13,3 +13,4 @@ snowflake-connector-python>=4.8
 # cryptography 49+ wheels fail to load on Intel (x86_64) Python on macOS
 # ("symbol not found in flat namespace"); 46-48 work and satisfy the connector.
 cryptography>=46.0.5,<49
+mcp>=2.3

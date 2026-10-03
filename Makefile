@@ -1,4 +1,4 @@
-.PHONY: data data-olist data-snowflake test ask eval api ui
+.PHONY: data data-olist data-snowflake test ask eval api ui mcp
 
 # Build the local TPC-H database (scale factor 0.1, about 25 MB)
 data:
@@ -29,3 +29,7 @@ api:
 # Run the web UI on http://localhost:3000 (needs `make api` running too)
 ui:
 	cd frontend && npm run dev
+
+# Run the MCP server over stdio (normally started by an MCP client, not by hand)
+mcp:
+	python -m backend.mcp_server
