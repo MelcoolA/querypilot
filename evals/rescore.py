@@ -12,6 +12,7 @@ from pathlib import Path
 
 import yaml
 
+from backend.agent.semantic import to_dialect
 from backend.warehouse import DATASET_PATHS
 from backend.warehouse.duckdb_wh import DuckDBWarehouse
 from evals.run_evals import EVALS_DIR, build_summary
@@ -23,14 +24,20 @@ def main() -> None:
     saved = json.loads((run_dir / "results.json").read_text())
     gold = yaml.safe_load((EVALS_DIR / "gold.yaml").read_text())
     gold_sql = {q["id"]: q["sql"] for q in gold["questions"]}
-    warehouse = DuckDBWarehouse(DATASET_PATHS[gold["dataset"]])
+    # Re-score on the warehouse the run used (older runs predate the field: DuckDB).
+    if saved.get("warehouse", "duckdb") == "snowflake":
+        from backend.warehouse.snowflake_wh import SnowflakeWarehouse
+
+        warehouse = SnowflakeWarehouse()
+    else:
+        warehouse = DuckDBWarehouse(DATASET_PATHS[gold["dataset"]])
 
     changed = []
     for r in saved["results"]:
         if r["status"] == "error":  # the agent gave up; nothing to re-score
             continue
         match, reason = results_match(
-            warehouse.run_query(gold_sql[r["id"]]).rows, warehouse.run_query(r["sql"]).rows
+            warehouse.run_query(to_dialect(gold_sql[r["id"]], warehouse.dialect)).rows, warehouse.run_query(r["sql"]).rows
         )
         new_status = "correct" if match else "wrong"
         if new_status != r["status"]:

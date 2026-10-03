@@ -9,6 +9,7 @@ gold.yaml, not from .env, so the gold SQL always runs on the data it was written
 """
 import argparse
 import json
+import os
 import stat
 import time
 from collections import defaultdict
@@ -20,7 +21,8 @@ import yaml
 from backend.agent.warmup import needs_warm_up, warm_up
 from backend.agent.graph import build_graph
 from backend.llm import get_llm
-from backend.warehouse import DATASET_PATHS
+from backend.agent.semantic import to_dialect
+from backend.warehouse import DATASET_PATHS, Warehouse, get_warehouse
 from backend.warehouse.duckdb_wh import DuckDBWarehouse
 from evals.scorer import results_match
 
@@ -55,7 +57,7 @@ def main() -> None:
 
     llm = get_llm()
     out_dir = _results_dir(args.baseline, llm.name, args.label)  # fail early, before a long run
-    warehouse = DuckDBWarehouse(DATASET_PATHS[gold["dataset"]], dataset=gold["dataset"])
+    warehouse = eval_warehouse(gold["dataset"])
     agent = build_graph(llm, warehouse)
 
     print(f"Running {len(questions)} questions | model {llm.name} | dataset {gold['dataset']}")
@@ -71,9 +73,9 @@ def main() -> None:
               f"{record['repairs']}r  {q['question'][:60]}"
               + ("" if record["status"] == "correct" else f"  ({record['reason'][:70]})"), flush=True)
 
-    summary = build_summary(results, llm.name, gold["dataset"])
+    summary = build_summary(results, llm.name, f"{gold['dataset']} ({warehouse.dialect})")
     print("\n" + summary)
-    save(out_dir, results, summary, llm.name, protect=args.baseline)
+    save(out_dir, results, summary, llm.name, warehouse.dialect, protect=args.baseline)
     print(f"Saved to {out_dir}")
 
 
@@ -112,7 +114,9 @@ def run_one(q: dict, agent, warehouse, model: str, label: str = "") -> dict:
     if state.get("error"):
         record["reason"] = f"agent gave up: {state['error'].splitlines()[0]}"
         return record
-    gold_rows = warehouse.run_query(q["sql"]).rows
+    # Gold SQL is written for DuckDB; on Snowflake it runs translated (all 40
+    # were checked to give identical results after translation).
+    gold_rows = warehouse.run_query(to_dialect(q["sql"], warehouse.dialect)).rows
     match, reason = results_match(gold_rows, state.get("rows", []))
     record["status"] = "correct" if match else "wrong"
     record["reason"] = reason
@@ -171,19 +175,27 @@ def build_summary(results: list[dict], model: str, dataset: str) -> str:
     return "\n".join(lines)
 
 
+def eval_warehouse(dataset: str) -> Warehouse:
+    """DuckDB by default (gold.yaml's dataset file); Snowflake when WAREHOUSE=snowflake."""
+    if os.getenv("WAREHOUSE", "duckdb").lower() == "snowflake":
+        return get_warehouse()
+    return DuckDBWarehouse(DATASET_PATHS[dataset], dataset=dataset)
+
+
 def _results_dir(baseline: bool, model: str, label: str) -> Path:
     stamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     safe_model = model.replace(":", "-").replace("/", "-")  # e.g. ollama-qwen2.5-coder-7b
-    name = "_".join(p for p in [stamp, safe_model, label] if p)
+    where = "snowflake" if os.getenv("WAREHOUSE", "duckdb").lower() == "snowflake" else ""
+    name = "_".join(p for p in [stamp, safe_model, where, label] if p)
     out = (BASELINE_DIR if baseline else RESULTS_DIR) / name
     if out.exists():  # the baseline folder must never be overwritten
         raise SystemExit(f"{out} already exists; refusing to overwrite.")
     return out
 
 
-def save(out_dir: Path, results: list[dict], summary: str, model: str, protect: bool) -> None:
+def save(out_dir: Path, results: list[dict], summary: str, model: str, warehouse: str, protect: bool) -> None:
     out_dir.mkdir(parents=True)
-    (out_dir / "results.json").write_text(json.dumps({"model": model, "results": results}, indent=2, default=str))
+    (out_dir / "results.json").write_text(json.dumps({"model": model, "warehouse": warehouse, "results": results}, indent=2, default=str))
     (out_dir / "summary.md").write_text(summary + "\n")
     if protect:  # baseline files are made read-only so they can't be edited by accident
         for f in out_dir.iterdir():
