@@ -7,7 +7,7 @@
 --   querypilot_wh       X-Small warehouse, suspends after 60s idle, 30s statement timeout
 --   querypilot_monitor  hard monthly credit cap on that warehouse
 --   querypilot.olist    database and schema for the Olist tables
---   querypilot_loader   role that can create and load tables (granted to you)
+--   querypilot_loader   role that can create and load tables (see loader_user.sql)
 --   querypilot_reader   read-only role: SELECT only (the agent's role)
 --   querypilot_agent    service user for the agent, key-pair login, no password
 
@@ -31,7 +31,7 @@ ALTER WAREHOUSE querypilot_wh SET RESOURCE_MONITOR = querypilot_monitor;
 CREATE DATABASE IF NOT EXISTS querypilot;
 CREATE SCHEMA IF NOT EXISTS querypilot.olist;
 
--- Loader role: used once by you (browser login) to load the Olist tables.
+-- Loader role: used by the short-lived loader user (loader_user.sql).
 CREATE ROLE IF NOT EXISTS querypilot_loader;
 GRANT USAGE ON WAREHOUSE querypilot_wh TO ROLE querypilot_loader;
 GRANT USAGE ON DATABASE querypilot TO ROLE querypilot_loader;

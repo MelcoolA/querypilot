@@ -1,4 +1,4 @@
-.PHONY: data data-olist test ask eval api ui
+.PHONY: data data-olist data-snowflake test ask eval api ui
 
 # Build the local TPC-H database (scale factor 0.1, about 25 MB)
 data:
@@ -7,6 +7,10 @@ data:
 # Build the Olist e-commerce database from the CSVs in data/olist/
 data-olist:
 	python -m backend.warehouse.setup_olist
+
+# Load the Olist tables into Snowflake (needs snowflake/loader_user.sql run first)
+data-snowflake:
+	python -m backend.warehouse.setup_snowflake
 
 test:
 	python -m pytest -q
