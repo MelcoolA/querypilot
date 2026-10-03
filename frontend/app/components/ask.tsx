@@ -7,6 +7,7 @@
 import { useEffect, useRef, useState } from "react";
 import { type AskResult, type Health, type Step, getExamples, getHealth, streamAsk } from "@/lib/api";
 import styles from "./ask.module.css";
+import ResultTabs from "./result-tabs";
 
 // Plain-English labels for the graph steps in backend/agent/graph.py.
 const STEP_LABELS: Record<string, string> = {
@@ -152,16 +153,7 @@ export default function Ask() {
 
       {error && <p className={styles.error}>{error}</p>}
 
-      {result && (
-        <section className={styles.panel}>
-          <h2 className={styles.panelTitle}>Answer</h2>
-          <p className={styles.answer}>{result.answer}</p>
-          <p className={styles.meta}>
-            {result.model} · {result.elapsed_s.toFixed(1)}s · {result.repairs} repair
-            {result.repairs === 1 ? "" : "s"}
-          </p>
-        </section>
-      )}
+      {result && <ResultTabs result={result} />}
     </main>
   );
 }

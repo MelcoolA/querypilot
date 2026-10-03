@@ -14,6 +14,17 @@
   --bad: #b91c1c;
   --bad-bg: #fee2e2;
   --radius: 10px;
+
+  /* Chart tokens. Series colors are the dataviz reference palette's first
+     three slots, validated against this surface (white): all checks pass;
+     slot 3 is under 3:1 contrast, so charts always ship with the Table tab
+     and a legend when there are several series. */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --chart-grid: #e1e0d9;
+  --chart-baseline: #c3c2b7;
+  --chart-ink: #898781;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -31,6 +42,14 @@
     --warn-bg: #3a3112;
     --bad: #f87171;
     --bad-bg: #3b1515;
+
+    /* Dark steps of the same hues, validated against #17171a: all checks pass. */
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --chart-grid: #2c2c2a;
+    --chart-baseline: #383835;
+    --chart-ink: #898781;
   }
   html {
     color-scheme: dark;

@@ -1,0 +1,182 @@
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 20px 16px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.tab,
+.tabActive {
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tabActive {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.tabBody {
+  min-height: 80px;
+}
+
+.answer,
+.answerFailed {
+  white-space: pre-wrap;
+}
+
+.answerFailed {
+  color: var(--bad);
+}
+
+.note {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.meta {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Single number */
+.hero {
+  padding: 8px 0;
+}
+
+.heroValue {
+  font-size: 56px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.heroLabel {
+  margin-top: 4px;
+  color: var(--muted);
+}
+
+/* Chart tooltip */
+.tooltip {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.tooltipLabel {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tooltipValue {
+  margin-left: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Table */
+.tableWrap {
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th,
+.table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.num {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums;
+}
+
+/* SQL */
+.sqlWrap {
+  position: relative;
+}
+
+.sql {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.copy {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.copy:hover {
+  border-color: var(--accent);
+}

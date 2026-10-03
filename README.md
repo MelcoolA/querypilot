@@ -255,10 +255,13 @@ joins don't multiply rows.
 |---|---|---|
 | `LLM_PROVIDER` | `ollama` | `anthropic` |
 | Model | `OLLAMA_MODEL=qwen2.5-coder:7b` | `ANTHROPIC_MODEL=claude-sonnet-5-5` |
-| Other | `OLLAMA_NUM_CTX=16384` | `ANTHROPIC_API_KEY=<your key>`, `ANTHROPIC_EFFORT=medium` |
+| Other | `OLLAMA_NUM_CTX=16384`, `OLLAMA_KEEP_ALIVE=30m` | `ANTHROPIC_API_KEY=<your key>`, `ANTHROPIC_EFFORT=medium` |
 
 Keep `OLLAMA_NUM_CTX`: without it, Ollama truncates the roughly 5,000-token
 Olist prompt and the model never sees the business definitions.
+`OLLAMA_KEEP_ALIVE` keeps the model loaded between questions (Ollama unloads
+it after 5 idle minutes by default, and reloading costs about a minute); it
+holds roughly 5 GB of memory while loaded.
 
 ### Tracing with LangSmith (optional)
 
@@ -313,8 +316,18 @@ make ui                               # http://localhost:3000
 ```
 
 Type a question or click an example. The agent's steps appear as they
-happen, then the answer. The status badge shows the model, the dataset, and
-whether the local model has finished warming up.
+happen, then the result in four tabs:
+
+- **Answer:** the plain-English answer, with a reminder to check its numbers.
+- **Chart:** a bar, line, or single-number view, chosen by `pick_chart`.
+  Colors come from a palette validated for color-blind readers in both light
+  and dark mode.
+- **Table:** every row, numbers formatted and right-aligned, with a note when
+  the result was cut off at the 1,000-row limit.
+- **SQL:** the exact query that ran, with a copy button.
+
+The status badge shows the model, the dataset, and whether the local model
+has finished warming up.
 
 ### Run the evals and tests
 
