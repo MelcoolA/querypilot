@@ -494,3 +494,12 @@ make test                                   # unit tests
 ```
 
 Results are saved to `evals/results/<date>_<model>/`.
+
+## Data credit
+
+The e-commerce data is the
+[Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce),
+published by Olist on Kaggle: about 100,000 real, anonymized orders from 2016
+to 2018. It is not included in this repository; download it from Kaggle and
+follow the license terms shown on the dataset page. The TPC-H data used by the
+unit tests is generated locally by DuckDB's `tpch` extension.

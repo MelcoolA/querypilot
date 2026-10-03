@@ -7,8 +7,9 @@ fixes its own errors, charts the result, and explains the answer in plain Englis
 
 ## Why this project exists
 
-This is a portfolio project for Forward Deployed Engineer interviews (phData).
-The developer (Melad) must be able to explain and defend every design choice.
+This is a portfolio project for building real depth in applied AI: agents,
+evals, guardrails, and data infrastructure. The developer (Melad) must be able
+to explain and defend every design choice.
 So when you (Claude Code) build something:
 
 - Explain what you built and why in 3 to 5 plain sentences after each step.
@@ -59,7 +60,7 @@ result rows, chart spec, final answer.
 - Schema context: table names, column names and types, and 3 sample rows per
   table. Add a short hand-written description per table in `semantic/tables.yaml`
   (business meaning of each table and key columns). This "semantic layer" is a
-  big accuracy win and a good interview talking point.
+  big accuracy win.
 
 ## LLM provider layer
 
@@ -130,7 +131,7 @@ write_sql, validate, execute, repair loop, summarize. A CLI: `python -m backend.
 Full guardrail list, 40-question gold set, eval runner, LangSmith tracing.
 Record the baseline score, then improve it (semantic layer, better prompts,
 few-shot examples) and record the new score. The before/after number is the
-headline for the resume.
+headline result.
 
 **Phase 3: API and frontend**
 FastAPI `/ask` with streamed steps. Next.js + TypeScript UI with chart,
