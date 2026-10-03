@@ -18,7 +18,7 @@ class FakeLLM(LLM):
         self.sql_replies = list(sql_replies)
         self.prompts: list[str] = []  # every prompt received, for assertions
 
-    def complete(self, system: str, prompt: str) -> LLMResponse:
+    def _complete(self, system: str, prompt: str) -> LLMResponse:
         self.prompts.append(prompt)
         if "explain data results" in system:  # the summarize prompt
             return LLMResponse("There are 5 regions.")

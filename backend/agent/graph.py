@@ -30,6 +30,16 @@ def route_after_check(state: AgentState, on_success: str) -> str:
     return "summarize"  # summarize reports the failure honestly
 
 
+# Named wrappers (not partial) so each routing decision has a readable name in
+# LangSmith traces instead of "RunnableCallable".
+def route_after_validate(state: AgentState) -> str:
+    return route_after_check(state, on_success="execute")
+
+
+def route_after_execute(state: AgentState) -> str:
+    return route_after_check(state, on_success="summarize")
+
+
 def route_after_repair(state: AgentState) -> str:
     """A repair that repeats an earlier attempt goes straight to summarize."""
     return "summarize" if state.get("repeated") else "validate"
@@ -49,8 +59,8 @@ def build_graph(llm: LLM, warehouse: Warehouse):
     graph.add_edge(START, "get_schema")
     graph.add_edge("get_schema", "write_sql")
     graph.add_edge("write_sql", "validate")
-    graph.add_conditional_edges("validate", partial(route_after_check, on_success="execute"))
-    graph.add_conditional_edges("execute", partial(route_after_check, on_success="summarize"))
+    graph.add_conditional_edges("validate", route_after_validate)
+    graph.add_conditional_edges("execute", route_after_execute)
     graph.add_conditional_edges("repair_sql", route_after_repair)
     graph.add_edge("summarize", END)
     return graph.compile()

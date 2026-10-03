@@ -18,7 +18,7 @@ class AnthropicLLM(LLM):
         self.name = f"anthropic:{model}"
         self.client = anthropic.Anthropic(api_key=api_key)
 
-    def complete(self, system: str, prompt: str) -> LLMResponse:
+    def _complete(self, system: str, prompt: str) -> LLMResponse:
         # No temperature: current Claude models reject sampling parameters.
         # Effort controls how much the model thinks, and so cost and latency.
         response = self.client.beta.messages.create(

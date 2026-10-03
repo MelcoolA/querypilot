@@ -100,6 +100,7 @@ flowchart LR
     WH --> D1[(DuckDB<br/>Olist)]
     WH --> D2[(DuckDB<br/>TPC-H)]
     WH -.-> SF[(Snowflake<br/>planned)]
+    AG -.-> LS[LangSmith<br/>traces, optional]
 ```
 
 Two small interfaces keep the agent independent of its providers. Every agent
@@ -253,6 +254,23 @@ make data
 
 Keep `OLLAMA_NUM_CTX`: without it, Ollama truncates the roughly 5,000-token
 Olist prompt and the model never sees the business definitions.
+
+### Tracing with LangSmith (optional)
+
+Every run can be traced in [LangSmith](https://smith.langchain.com): each
+graph step in order, every LLM call with its prompt, reply, and token counts,
+and each routing decision. Eval runs are labelled by question id,
+difficulty, and model, so a failed eval question can be opened and inspected
+step by step.
+
+```bash
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=<your key>
+LANGSMITH_PROJECT=querypilot
+```
+
+Tracing sends prompts, SQL, and sample rows to LangSmith's servers, so it is
+off by default. Tests never send traces.
 
 ### Ask a question
 

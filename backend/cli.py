@@ -24,7 +24,8 @@ def main() -> None:
     state = {"question": question}
     start = time.time()
     # stream_mode="updates" yields after every node, so we can show live progress.
-    for update in agent.stream(state, stream_mode="updates"):
+    config = {"run_name": "cli question", "tags": ["cli"], "metadata": {"model": llm.name}}
+    for update in agent.stream(state, config=config, stream_mode="updates"):
         for node, changes in update.items():
             state.update(changes)
             print(f"[{time.time() - start:5.1f}s] {node:<10} {_describe(node, changes)}")

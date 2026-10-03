@@ -11,7 +11,7 @@ class OllamaLLM(LLM):
         self.name = f"ollama:{model}"
         self.client = ollama.Client(host=host)
 
-    def complete(self, system: str, prompt: str) -> LLMResponse:
+    def _complete(self, system: str, prompt: str) -> LLMResponse:
         response = self.client.chat(
             model=self.model,
             messages=[

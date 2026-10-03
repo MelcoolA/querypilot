@@ -63,7 +63,7 @@ def main() -> None:
 
     results = []
     for i, q in enumerate(questions, 1):
-        record = run_one(q, agent, warehouse, llm.name)
+        record = run_one(q, agent, warehouse, llm.name, args.label)
         results.append(record)
         mark = {"correct": "PASS", "wrong": "FAIL", "error": "ERR "}[record["status"]]
         print(f"[{i:>2}/{len(questions)}] {mark} {q['id']} {record['latency_s']:6.1f}s "
@@ -94,7 +94,7 @@ def warm_up(llm, warehouse) -> None:
     )
 
 
-def run_one(q: dict, agent, warehouse, model: str) -> dict:
+def run_one(q: dict, agent, warehouse, model: str, label: str = "") -> dict:
     record = {
         "id": q["id"], "difficulty": q["difficulty"], "traps": q.get("traps", []),
         "question": q["question"], "status": "error", "reason": "", "sql": "", "answer": "",
@@ -102,7 +102,16 @@ def run_one(q: dict, agent, warehouse, model: str) -> dict:
     }
     start = time.time()
     try:
-        state = agent.invoke({"question": q["question"]})
+        # run_name, tags, and metadata label this question's trace in LangSmith
+        # (ignored when tracing is off).
+        state = agent.invoke(
+            {"question": q["question"]},
+            config={
+                "run_name": f"eval {q['id']}",
+                "tags": ["eval", q["difficulty"]] + ([label] if label else []),
+                "metadata": {"question_id": q["id"], "difficulty": q["difficulty"], "model": model},
+            },
+        )
     except Exception as e:  # a crash counts as a wrong answer, not a crashed eval
         record["latency_s"] = round(time.time() - start, 2)
         record["reason"] = f"agent crashed: {type(e).__name__}: {e}"
