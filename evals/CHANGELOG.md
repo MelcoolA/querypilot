@@ -12,6 +12,8 @@ One entry per change to the agent, with the eval score after it. Dataset: Olist
 | 5 | Few-shot examples in write_sql (6 patterns, none from gold) | qwen2.5-coder:7b | 29/40 (72%) | 12/12 | 13/16 | 4/12 | medium best yet, hard down (over-imitation); 3 gave up |
 | 6 | Claude baseline: Phase 1 agent, no semantic layer | claude-sonnet-5-5 | 35/40 (88%) | 12/12 | 14/16 | 9/12 | 0 gave up, 3.9s avg, $0.011/question |
 | 7 | Claude final: all fixes | claude-sonnet-5-5 | **40/40 (100%)** | 12/12 | 16/16 | 12/12 | 0 gave up, 3.6s avg, $0.017/question |
+| 8 | Final agent on **Snowflake** | claude-sonnet-5-5 | **40/40 (100%)** | 12/12 | 16/16 | 12/12 | 0 gave up, 4.5s avg, $0.017/question |
+| 9 | Final agent on **Snowflake** | qwen2.5-coder:7b | 30/40 (75%) | 12/12 | 13/16 | 5/12 | 4 gave up, 18.7s avg; DuckDB was 29/40 |
 
 ## 0. Gold set created
 
@@ -280,3 +282,36 @@ value of each number column with the row it belongs to, and the row count.
 After the change the same question answers "ranged from 800 in January to
 7,544 in November". The eval scores SQL results, not answer text, so the
 scores above are unaffected.
+
+## 8 and 9. Same agent on Snowflake: Claude 40/40, qwen 30/40
+
+The Olist tables were loaded into Snowflake (`make data-snowflake`, row
+counts and values checked against DuckDB) and the final agent was run with
+`WAREHOUSE=snowflake`. Results:
+`results/2026-10-02_224602_anthropic-claude-sonnet-5-5_snowflake_final/` and
+`results/2026-10-02_224917_ollama-qwen2.5-coder-7b_snowflake_final/`.
+
+Fairness check first: the 40 gold queries are written for DuckDB, so on
+Snowflake they run translated by sqlglot. All 40 translated queries return
+exactly the DuckDB results, so a Snowflake score means the same thing as a
+DuckDB score.
+
+| | DuckDB | Snowflake |
+|---|---|---|
+| Claude Sonnet 5.5 | 40/40, 3.6s avg | 40/40, 4.5s avg |
+| qwen2.5-coder:7b | 29/40, 17.6s avg | 30/40, 18.7s avg |
+
+- No failure is caused by Snowflake. qwen's 4 give-ups are its usual
+  wrong-table mistakes (customer_unique_id or seller_id read from orders).
+  It wrote Snowflake spelling correctly (`DATEDIFF(SECOND, ...)`), so the
+  dialect-aware semantic layer works.
+- Only 2 questions changed between warehouses for qwen: m11 (wrong on
+  DuckDB, gave up on Snowflake) and h02 (wrong on DuckDB, right on
+  Snowflake). Snowflake's column types and sample rows make the prompt
+  slightly different, which moves a question or two either way, the same
+  noise seen between prompt changes in fixes 2 to 4.
+- Snowflake adds about 1 second per question (network round trip and
+  warehouse), while the schema context is cached so it costs nothing per
+  question.
+- Snowflake cost for both full runs plus the checks: a small fraction of one
+  credit, inside the 5-credit monthly cap.

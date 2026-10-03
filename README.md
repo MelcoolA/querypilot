@@ -33,6 +33,9 @@ before and after adding the semantic layer and the other fixes.
 - **Cloud vs local:** Claude is 5 to 10x faster and gets every question
   right for under 2 cents each (about $17 per 1,000 questions). The local
   model is free and keeps data on the machine, but tops out around 72%.
+- **Same answers on Snowflake:** the final agent scores 40/40 with Claude and
+  30/40 with the local model on Snowflake (vs 40/40 and 29/40 on DuckDB), with
+  all 40 gold queries checked to return identical results on both warehouses.
 - **Honest caveats:** local latency varied 2x between identical runs because of
   laptop load. With a 7B model, any prompt change moves a few answers both
   ways, so differences of one question between runs are noise. At 40/40 the
