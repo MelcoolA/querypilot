@@ -111,3 +111,67 @@ tables:
 
   geolocation:
     description: One row per zip code prefix with average coordinates.
+
+# Few-shot examples for the write_sql prompt. Each one teaches a SQL pattern
+# (count distinct orders, count groups, aggregate per order first, compare
+# groups, compute LAG before filtering) on a question that is NOT in the
+# gold set, so the eval measures the pattern, not memorized answers.
+# tests/test_semantic.py checks they run and do not overlap evals/gold.yaml.
+examples:
+  - question: How many orders did sellers in each state ship?
+    sql: |
+      SELECT s.seller_state, COUNT(DISTINCT oi.order_id) AS orders
+      FROM order_items oi
+      JOIN sellers s ON oi.seller_id = s.seller_id
+      GROUP BY s.seller_state
+      ORDER BY orders DESC
+  - question: How many sellers have sold more than 100 items?
+    sql: |
+      SELECT COUNT(*) AS sellers
+      FROM (
+        SELECT seller_id
+        FROM order_items
+        GROUP BY seller_id
+        HAVING COUNT(*) > 100
+      )
+  - question: What percentage of sellers have sold more than 100 items?
+    sql: |
+      SELECT 100.0 * AVG(CASE WHEN items > 100 THEN 1 ELSE 0 END) AS pct_sellers
+      FROM (
+        SELECT seller_id, COUNT(*) AS items
+        FROM order_items
+        GROUP BY seller_id
+      )
+  - question: What is the average freight cost per order?
+    sql: |
+      SELECT AVG(order_freight) AS avg_freight_per_order
+      FROM (
+        SELECT order_id, SUM(freight_value) AS order_freight
+        FROM order_items
+        GROUP BY order_id
+      )
+  - question: Do orders placed on weekends get different review scores than weekday orders?
+    sql: |
+      SELECT CASE WHEN DAYOFWEEK(o.order_purchase_timestamp) IN (0, 6) THEN 'weekend' ELSE 'weekday' END AS day_type,
+             AVG(r.review_score) AS avg_review_score
+      FROM orders o
+      JOIN order_reviews r ON o.order_id = r.order_id
+      GROUP BY day_type
+  - question: For each quarter of 2018, what was the revenue and the percentage change from the previous quarter?
+    sql: |
+      WITH quarterly AS (
+        SELECT DATE_TRUNC('quarter', o.order_purchase_timestamp) AS quarter, SUM(oi.price) AS revenue
+        FROM order_items oi
+        JOIN orders o ON oi.order_id = o.order_id
+        GROUP BY quarter
+      ),
+      with_change AS (
+        -- LAG runs before the year filter, so Q1 2018 is compared with Q4 2017
+        SELECT quarter, revenue,
+               100.0 * (revenue - LAG(revenue) OVER (ORDER BY quarter)) / LAG(revenue) OVER (ORDER BY quarter)
+                 AS pct_change
+        FROM quarterly
+      )
+      SELECT quarter, revenue, pct_change
+      FROM with_change
+      WHERE quarter >= DATE '2018-01-01' AND quarter < DATE '2019-01-01'

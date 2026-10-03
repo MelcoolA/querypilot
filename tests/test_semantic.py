@@ -43,3 +43,25 @@ def test_schema_context_includes_semantics(olist):
 def test_dataset_without_semantic_layer_is_unchanged():
     assert load_semantic("tpch") is None
     assert load_semantic("") is None
+
+
+def test_examples_run_and_do_not_overlap_gold(olist):
+    import yaml
+
+    from backend.guardrails.sql_validator import validate_sql
+
+    gold = {q["question"].strip().lower() for q in yaml.safe_load(open("evals/gold.yaml"))["questions"]}
+    examples = load_semantic("olist")["examples"]
+    assert examples
+    for e in examples:
+        assert e["question"].strip().lower() not in gold, f"example is a gold question: {e['question']}"
+        result = validate_sql(e["sql"], set(olist.list_tables()))
+        assert result.ok, result.error
+        assert olist.run_query(result.sql).rows
+
+
+def test_examples_render_only_for_datasets_that_have_them():
+    from backend.agent.semantic import render_examples
+
+    assert render_examples(load_semantic("olist")).startswith("EXAMPLES")
+    assert render_examples(None) == ""

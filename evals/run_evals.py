@@ -17,7 +17,7 @@ from pathlib import Path
 
 import yaml
 
-from backend.agent import nodes, prompts
+from backend.agent import nodes, prompts, semantic
 from backend.agent.graph import build_graph
 from backend.llm import get_llm
 from backend.warehouse import DATASET_PATHS
@@ -82,7 +82,11 @@ def warm_up(llm, warehouse) -> None:
     schema = nodes.get_schema({}, warehouse)["schema_context"]
     llm.complete(
         prompts.WRITE_SQL_SYSTEM.format(dialect=warehouse.dialect),
-        prompts.WRITE_SQL_USER.format(schema=schema, question="How many rows are in the orders table?"),
+        prompts.WRITE_SQL_USER.format(
+            schema=schema,
+            examples=semantic.render_examples(semantic.load_semantic(warehouse.dataset)),
+            question="How many rows are in the orders table?",
+        ),
     )
 
 

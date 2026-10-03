@@ -18,7 +18,7 @@ Rules:
 WRITE_SQL_USER = """Schema:
 {schema}
 
-Question: {question}"""
+{examples}Question: {question}"""
 
 REPAIR_SQL_USER = """Schema:
 {schema}

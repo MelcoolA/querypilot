@@ -41,7 +41,11 @@ def get_schema(state: AgentState, warehouse: Warehouse) -> dict:
 def write_sql(state: AgentState, llm: LLM, warehouse: Warehouse) -> dict:
     response = llm.complete(
         system=prompts.WRITE_SQL_SYSTEM.format(dialect=warehouse.dialect),
-        prompt=prompts.WRITE_SQL_USER.format(schema=state["schema_context"], question=state["question"]),
+        prompt=prompts.WRITE_SQL_USER.format(
+            schema=state["schema_context"],
+            examples=semantic.render_examples(semantic.load_semantic(warehouse.dataset)),
+            question=state["question"],
+        ),
     )
     return {
         "sql": extract_sql(response.text), "attempts": 0, "error": "",

@@ -48,6 +48,15 @@ def render_columns(sem: dict, table: str, columns: list[tuple[str, str]], wareho
     return "\n".join(lines)
 
 
+def render_examples(sem: dict | None) -> str:
+    """Worked question -> SQL examples for the write_sql prompt ("" if none)."""
+    examples = (sem or {}).get("examples") or []
+    if not examples:
+        return ""
+    parts = [f"Question: {e['question']}\n```sql\n{e['sql'].strip()}\n```" for e in examples]
+    return "EXAMPLES of correct queries on this data:\n\n" + "\n\n".join(parts) + "\n\n"
+
+
 def table_description(sem: dict, table: str) -> str:
     return sem.get("tables", {}).get(table, {}).get("description", "")
 

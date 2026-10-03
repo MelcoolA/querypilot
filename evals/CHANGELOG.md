@@ -9,6 +9,7 @@ One entry per change to the agent, with the eval score after it. Dataset: Olist
 | 2 | Semantic layer (`semantic/olist.yaml`) | qwen2.5-coder:7b | **29/40 (72%)** | 12/12 | 12/16 | 5/12 | 1 gave up, 40.1s avg, 0.17 repairs avg |
 | 3 | Repair loop: attempt history, stop on repeat (h12 reworded) | qwen2.5-coder:7b | 30/40 (75%) | 12/12 | 12/16 | 6/12 | +1 is from rewording h12, not the fix; 2 gave up, 40.9s avg |
 | 4 | Comparison rule in write_sql; summarize warns on row limit | qwen2.5-coder:7b | 29/40 (72%) | 12/12 | 11/16 | 6/12 | -1 is within noise (see entry); answers clearly better; 4 gave up |
+| 5 | Few-shot examples in write_sql (6 patterns, none from gold) | qwen2.5-coder:7b | 29/40 (72%) | 12/12 | 13/16 | 4/12 | medium best yet, hard down (over-imitation); 3 gave up |
 
 ## 0. Gold set created
 
@@ -180,3 +181,39 @@ also wrong), but it could in a future run.
 Latency fell from 40.9s to 23.0s average, but prompts got slightly longer
 and output barely changed, so this is almost certainly lower load on the
 laptop, not the fix. Latency comparisons between local runs are unreliable.
+
+## 5. Few-shot examples: 29/40 (72%), medium up, hard down
+
+Six worked examples added to `semantic/olist.yaml` and shown in the
+write_sql prompt only. Each teaches one pattern on a question that is not in
+the gold set (a test enforces this): count distinct orders from a multi-row
+table, count groups that meet a condition, percentage of entities meeting a
+condition, aggregate per order first, compare groups (one row per group),
+compute LAG before filtering.
+
+Results: `results/2026-10-02_174741_ollama-qwen2.5-coder-7b_fix4-fewshot/`.
+
+Changes vs fix 3: gained m07, m08, h12; lost h07, h09,
+h11. The first SQL changed on 34 of 40 questions.
+
+- **Examples helped where the pattern matched.** m08 (average order value)
+  now sums price per order and then averages, the exact shape of the
+  "average freight cost per order" example; m07 likewise. Medium is 13/16,
+  the best of any run.
+- **Examples hurt by over-imitation.** h11 asks for Q1 2018 vs Q1 2017
+  (year over year). The model copied the quarterly LAG example almost line
+  for line and returned Q1 2018 vs the previous quarter (Q4 2017). A known
+  few-shot failure: the model copies the example's structure instead of
+  reading the question. Hard fell to 4/12.
+- h07 grouped by exact item count (17 groups) instead of single vs multi;
+  h09 read customer_unique_id from orders. Both look like noise.
+- h02 regressed in answer quality: only the late-delivery average, no
+  comparison, and the summary did not flag the missing group.
+- m11 (count customers with more than one order) still groups without
+  counting, despite a near-identical example. m01 and m15 still count payment
+  rows despite an example and a definition.
+
+Takeaway: with qwen2.5-coder:7b, prompting has plateaued at about 29 to 30
+of 40. Fixes 2 to 4 each moved several questions in both directions without
+changing the total. The remaining failures are logic the model gets wrong
+even with the rule, a definition, and an example in front of it.
