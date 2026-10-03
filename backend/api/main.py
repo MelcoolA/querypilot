@@ -73,6 +73,16 @@ def create_app(llm: LLM | None = None, warehouse: Warehouse | None = None) -> Fa
         CORSMiddleware, allow_origins=[FRONTEND_ORIGIN], allow_methods=["GET", "POST"], allow_headers=["*"]
     )
 
+    @app.get("/")
+    def root() -> dict:
+        # People land here from Docker Desktop's port link; point them to the app.
+        return {
+            "service": "QueryPilot API",
+            "app": FRONTEND_ORIGIN,
+            "docs": "/docs",
+            "health": "/health",
+        }
+
     @app.get("/health")
     def health() -> dict:
         return {

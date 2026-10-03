@@ -70,3 +70,8 @@ def test_question_is_validated():
 def test_health_reports_ready_when_no_warm_up_needed():
     # The fake LLM is not a local model, so there is nothing to warm up.
     assert client_with([]).get("/health").json()["ready"] is True
+
+
+def test_root_points_to_the_app():
+    body = client_with([]).get("/").json()
+    assert body["app"] == "http://localhost:3000" and body["docs"] == "/docs"
