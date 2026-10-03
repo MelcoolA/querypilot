@@ -25,7 +25,8 @@ def describe_step(node: str, changes: dict) -> str:
     if node == "get_schema":
         return f"{len(changes['tables'])} tables"
     if node == "execute":
-        return f"{len(changes['rows'])} rows"
+        n = len(changes["rows"])
+        return f"{n} row{'' if n == 1 else 's'}"
     if node == "repair_sql":
         return f"attempt {changes['attempts']}"
     if node == "pick_chart":
