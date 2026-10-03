@@ -45,6 +45,64 @@ before and after adding the semantic layer and the other fixes.
 The full change-by-change history, including what did not help, is in
 [`evals/CHANGELOG.md`](evals/CHANGELOG.md).
 
+## Business impact
+
+**The problem.** In most companies, a question like "which regions had the
+biggest revenue drop last quarter?" goes into an analyst's queue. The answer
+comes back hours or days later, and two teams asking the same question often
+get different numbers because they define "revenue" or "customer"
+differently.
+
+**What QueryPilot changes.**
+
+| | Typical ad-hoc request | QueryPilot (measured on the 40-question eval) |
+|---|---|---|
+| Time to an answer | hours to days in an analyst queue | median 3.4s with Claude (90% under 4.7s) |
+| Consistency | depends on who writes the SQL | one set of business definitions in the semantic layer, used for every answer |
+| Can the user check it? | rarely, the SQL stays with the analyst | the exact SQL, the full result table, and a chart, every time |
+| Accuracy | not usually measured | 40/40 with Claude, on DuckDB and on Snowflake |
+| Cost per question | analyst time | about $0.017 of Claude usage, plus a few seconds of warehouse time |
+
+**What the numbers mean in practice.** As an illustration, with assumptions
+stated: if an analyst spends 15 minutes on a routine question at a loaded cost
+of $60 an hour, that question costs about $15. A team asking 500 routine
+questions a month spends about $7,500 of analyst time on them, against about
+$9 of Claude usage plus warehouse credits with QueryPilot. The assumptions are
+illustrative, not measured; the point is the order of magnitude, and that the
+analysts get their time back for the questions that need judgment.
+
+**Why the semantic layer is the business story, not just a technical one.**
+Without it, a strong model still gave defensible answers that disagreed with
+the company's definitions: revenue growth of 282% instead of 274%, because it
+chose to include freight and drop canceled orders. With the definitions
+written down once, every answer counts revenue, customers, and late
+deliveries the same way, and the answer states the choice it made. That is
+the "single source of truth" a data team wants from any BI tool.
+
+**Risks, and how they are handled.**
+
+| Risk | Mitigation in this project |
+|---|---|
+| A wrong answer that looks right | 40-question eval with hand-checked gold SQL; the SQL and full table shown with every answer; summaries grounded in numbers computed by code; the agent says "I could not answer this confidently" instead of guessing |
+| Someone changes or deletes data | read-only database role (enforced by Snowflake itself) plus a SQL validator that only allows a single SELECT |
+| Runaway cost | 30s query timeout, an X-Small warehouse that suspends after 60 idle seconds, and a monthly Snowflake credit cap; for any shared deployment, also a spend limit on the LLM account (set in the Anthropic Console) |
+| Metric drift between teams | business definitions live in one reviewed file (`semantic/olist.yaml`), not in each person's SQL |
+| Sensitive data sent to an LLM | a local model option (Ollama) keeps everything on the machine, at lower accuracy (29 to 30 of 40) and higher latency |
+
+**The local vs cloud tradeoff for a client.** The local model is free and
+private but answered 29 to 30 of 40 correctly and took a median of 13s. Claude
+answered all 40 in a median of 3.4s for under 2 cents each. For most teams
+the cloud model is the right default; a local model fits when data cannot
+leave the company's machines, with the eval set as the way to check whether
+its accuracy is good enough for the questions that team actually asks.
+
+**How a real rollout would go.** Start with one team and its 20 to 50 most
+common questions: write those questions and their correct SQL into the eval
+set, capture the team's metric definitions in the semantic layer with the
+people who own them, and only widen access once the eval passes. Every change
+to prompts, definitions, or models then has to keep the eval green, the same
+way code has to pass its tests.
+
 ## How it works
 
 ### System design
