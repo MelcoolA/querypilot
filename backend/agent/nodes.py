@@ -118,6 +118,14 @@ def summarize(state: AgentState, llm: LLM) -> dict:
     # Reached either with results, or after the repair budget ran out.
     # Guardrail: when we have no valid result we say so instead of guessing.
     if state.get("error"):
+        if _is_blocked_write(state["error"]):
+            # A deliberate refusal, not a failure: say so plainly.
+            return {
+                "answer": (
+                    "QueryPilot only reads data. It cannot change or delete anything, so this request "
+                    "was blocked by the SQL guardrail. Try asking a question about the data instead."
+                )
+            }
         n = state["attempts"]
         return {
             "answer": (
@@ -151,6 +159,11 @@ def summarize(state: AgentState, llm: LLM) -> dict:
             "cover all the data. Ask a more specific or aggregated question for a complete answer."
         )
     return {"answer": answer, **_tokens(state, response)}
+
+
+def _is_blocked_write(error: str) -> bool:
+    """True when the validator rejected SQL that would change data (DELETE, DROP, ...)."""
+    return "Only SELECT queries are allowed" in error or "Forbidden operation" in error
 
 
 def extract_sql(text: str) -> str:

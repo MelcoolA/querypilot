@@ -4,54 +4,13 @@ Ask a business question in plain English. QueryPilot finds the right tables,
 writes SQL, checks it against seven guardrails, runs it read-only, repairs its
 own errors, and explains the answer, always showing the SQL it ran.
 
-<!-- Demo GIF goes here once the web UI (Phase 3) is built. -->
+<!-- Demo GIF: record it with docs/demo-script.md, save as docs/images/demo.gif,
+     then replace the screenshot below with ![QueryPilot demo](docs/images/demo.gif) -->
 
-A real run on the local model (first question of the session, so the model
-had not cached the schema yet):
+![QueryPilot answering "Which 5 customer states generated the most revenue?": the agent's steps, then a bar chart](docs/images/ui-bar-chart.png)
 
-```text
-$ DATASET=olist python -m backend.cli "Which 5 customer states generated the most revenue?"
-Question: Which 5 customer states generated the most revenue?
-Model:    ollama:qwen2.5-coder:7b
-
-[  0.1s] get_schema 8 tables
-[ 61.1s] write_sql  ok
-[ 61.2s] validate   ok
-[ 61.3s] execute    5 rows
-[ 73.5s] summarize  ok
-
-SQL:
-SELECT
-  c.customer_state,
-  SUM(oi.price) AS total_revenue
-FROM customers AS c
-JOIN orders AS o
-  ON c.customer_id = o.customer_id
-JOIN order_items AS oi
-  ON o.order_id = oi.order_id
-GROUP BY
-  c.customer_state
-ORDER BY
-  total_revenue DESC
-LIMIT 5
-
-Result:
-customer_state | total_revenue
----------------+--------------
-SP             | 5,202,955.05
-RJ             | 1,824,092.67
-MG             | 1,585,308.03
-RS             | 750,304.02
-PR             | 683,083.76
-
-Answer:
-The top 5 customer states by revenue are SP, RJ, MG, RS, and PR, generating
-$5,202,955.05, $1,824,092.67, $1,585,308.03, $750,304.02, and $683,083.76
-respectively. Revenue was calculated as the sum of prices in the order items.
-```
-
-> **Status:** the agent, guardrails, semantic layer, and evals work in the
-> terminal on local DuckDB data. Web UI, Snowflake, and deployment are next.
+> **Status:** the agent, guardrails, semantic layer, evals, streaming API, and
+> web UI all run locally on DuckDB. Snowflake and deployment are next.
 
 ## Results
 
@@ -88,8 +47,9 @@ The full change-by-change history, including what did not help, is in
 
 ```mermaid
 flowchart LR
-    U([Business user]) --> CLI[CLI<br/>backend/cli.py]
-    U --> API[FastAPI /ask<br/>streams steps]
+    U([Business user]) --> UI[Web UI<br/>Next.js, frontend/]
+    U --> CLI[CLI<br/>backend/cli.py]
+    UI --> API[FastAPI /ask<br/>streams steps]
     CLI --> AG[LangGraph agent<br/>backend/agent]
     API --> AG
     EV[Eval runner<br/>evals/] --> AG
@@ -136,6 +96,17 @@ and the answer. `pick_chart` uses plain rules on the result's shape (one
 number, values over time, values per category), not an LLM call, so it is
 free and instant. A `classify` step (reject questions the data can't answer)
 is planned.
+
+### The web UI
+
+The browser reads the `/ask` stream as it arrives, so each agent step appears
+the moment it finishes. The result opens in four tabs: Answer, Chart, Table,
+and SQL. Charts are chosen by rules on the result's shape and drawn with
+Recharts in colors checked for color-blind readers, in light and dark mode.
+
+| Line chart, dark mode | The exact SQL that ran |
+|---|---|
+| ![Orders per month in 2017 as a line chart, dark mode](docs/images/ui-line-chart-dark.png) | ![The SQL tab with a copy button](docs/images/ui-sql.png) |
 
 ## Why semantics matter
 
@@ -287,7 +258,24 @@ python -m backend.cli "How many orders were delivered?"
 ```
 
 The CLI prints each step as it runs, then the SQL, the result table, and the
-answer.
+answer:
+
+```text
+$ python -m backend.cli "Which 5 customer states generated the most revenue?"
+[  0.2s] get_schema 8 tables
+[  7.8s] write_sql  ok
+[  7.8s] validate   ok
+[  7.9s] execute    5 rows
+[  7.9s] pick_chart bar
+[ 18.8s] summarize  ok
+
+Result:
+customer_state | total_revenue
+---------------+--------------
+SP             | 5,202,955.05
+RJ             | 1,824,092.67
+...
+```
 
 ### Run the API
 

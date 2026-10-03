@@ -109,3 +109,10 @@ def test_give_up_message_uses_singular_for_one_attempt(wh):
     llm = FakeLLM(["SELECT nope FROM region", "SELECT nope FROM region"])
     state = build_graph(llm, wh).invoke({"question": "how many regions?"})
     assert "After 1 repair attempt the query" in state["answer"]
+
+
+def test_write_requests_get_a_clear_refusal(wh):
+    llm = FakeLLM(["DELETE FROM region", "DELETE FROM region"])
+    state = build_graph(llm, wh).invoke({"question": "delete all regions"})
+    assert "only reads data" in state["answer"]
+    assert wh.run_query("SELECT count(*) FROM region").rows == [(5,)]  # nothing was deleted
