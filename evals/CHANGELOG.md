@@ -14,6 +14,8 @@ One entry per change to the agent, with the eval score after it. Dataset: Olist
 | 7 | Claude final: all fixes | claude-sonnet-5-5 | **40/40 (100%)** | 12/12 | 16/16 | 12/12 | 0 gave up, 3.6s avg, $0.017/question |
 | 8 | Final agent on **Snowflake** | claude-sonnet-5-5 | **40/40 (100%)** | 12/12 | 16/16 | 12/12 | 0 gave up, 4.5s avg, $0.017/question |
 | 9 | Final agent on **Snowflake** | qwen2.5-coder:7b | 30/40 (75%) | 12/12 | 13/16 | 5/12 | 4 gave up, 18.7s avg; DuckDB was 29/40 |
+| 10 | Currency and revenue scope in the semantic layer | claude-sonnet-5-5 | **40/40 (100%)** | 12/12 | 16/16 | 12/12 | answers in R$ 10/10, revenue scope stated 5/5 |
+| 11 | Currency and revenue scope in the semantic layer | qwen2.5-coder:7b | 30/40 (75%) | 12/12 | 13/16 | 5/12 | answers in R$ 8/8, revenue scope stated 0/4 |
 
 ## 0. Gold set created
 
@@ -315,3 +317,30 @@ DuckDB score.
   question.
 - Snowflake cost for both full runs plus the checks: a small fraction of one
   credit, inside the 5-credit monthly cap.
+
+## 10 and 11. Currency and revenue scope reach the answer (no score change)
+
+Prompted by Claude Desktop: asked over MCP for the top revenue states, it
+reviewed QueryPilot's answer and flagged that amounts were written in dollars
+(Olist is in Brazilian reais) and that revenue silently includes canceled
+orders. Both were real gaps: the currency was only a YAML comment, and the
+revenue definition never said it ignores order status.
+
+Changes: a `currency` definition, a revenue definition that states it counts
+every order item regardless of status, and a new `answer_notes` list in the
+semantic YAML that is passed to the summarize step (which never saw the
+definitions). Results: `results/2026-10-03_101317_anthropic-claude-sonnet-5-5_answer-notes/`, `results/2026-10-03_101554_ollama-qwen2.5-coder-7b_answer-notes/` (DuckDB).
+
+| | Score | Answers in R$ (correct money answers) | Revenue answers that state the scope |
+|---|---|---|---|
+| Claude Sonnet 5.5 | 40/40 (unchanged) | 10/10 | 5/5 |
+| qwen2.5-coder:7b | 30/40 (was 29) | 8/8 | 0/4 |
+
+- No regressions. qwen's only change is h07 (wrong to correct), within the
+  usual noise of a prompt change.
+- The currency fix works for both models. The scope note works for Claude
+  and is ignored by qwen: a 7B model follows some instructions and skips
+  others, the same pattern as in fixes 2 to 4.
+- qwen's average latency (44.6s) is not comparable to earlier runs: the
+  local model was shared with the running web UI and Claude Desktop's
+  QueryPilot server during this run.
