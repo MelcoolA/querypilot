@@ -19,15 +19,13 @@ REPAIR_SQL_USER = """Schema:
 
 Question: {question}
 
-This SQL failed:
-```sql
-{sql}
-```
+Previous attempts, all of which failed:
 
-Error:
-{error}
+{attempts}
 
-Fix the SQL so it answers the question and avoids the error."""
+Write a corrected query that answers the question. Do not repeat any previous
+attempt. Read each error carefully: it names the exact problem. If a column is
+not found in a table, check the schema for the table that actually has it."""
 
 SUMMARIZE_SYSTEM = """You explain data results to business users in plain English.
 Rules:

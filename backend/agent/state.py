@@ -9,6 +9,8 @@ class AgentState(TypedDict, total=False):
     sql: str                 # latest SQL (raw from the LLM, then cleaned by validate)
     attempts: int            # how many repairs have been tried so far
     error: str               # latest validation or execution error, "" if none
+    history: list[dict]      # failed attempts so far: [{"sql": ..., "error": ...}], oldest first
+    repeated: bool           # True if a repair returned SQL it had already tried
     columns: list[str]
     rows: list[tuple]
     answer: str              # final plain-English answer

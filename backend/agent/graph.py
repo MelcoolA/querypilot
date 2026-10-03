@@ -1,9 +1,13 @@
 """Wire the nodes into a LangGraph state machine.
 
     get_schema -> write_sql -> validate -> execute -> summarize
-                                  ^          |  |
-                                  |   error  |  | error
-                                  +-- repair_sql <+
+                                ^    | error     | error   ^
+                                |    v           v         |
+                                +--- repair_sql <+         |
+                                         |                 |
+                                         +-----------------+
+                         (repair repeats an earlier attempt)
+    After MAX_REPAIRS failed repairs, validate or execute also route to summarize.
 """
 from functools import partial
 
@@ -26,6 +30,11 @@ def route_after_check(state: AgentState, on_success: str) -> str:
     return "summarize"  # summarize reports the failure honestly
 
 
+def route_after_repair(state: AgentState) -> str:
+    """A repair that repeats an earlier attempt goes straight to summarize."""
+    return "summarize" if state.get("repeated") else "validate"
+
+
 def build_graph(llm: LLM, warehouse: Warehouse):
     # partial() injects the LLM and warehouse, so nodes stay plain functions
     # that are easy to unit test with fakes.
@@ -42,6 +51,6 @@ def build_graph(llm: LLM, warehouse: Warehouse):
     graph.add_edge("write_sql", "validate")
     graph.add_conditional_edges("validate", partial(route_after_check, on_success="execute"))
     graph.add_conditional_edges("execute", partial(route_after_check, on_success="summarize"))
-    graph.add_edge("repair_sql", "validate")
+    graph.add_conditional_edges("repair_sql", route_after_repair)
     graph.add_edge("summarize", END)
     return graph.compile()

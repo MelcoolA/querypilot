@@ -16,8 +16,10 @@ class FakeLLM(LLM):
 
     def __init__(self, sql_replies: list[str]):
         self.sql_replies = list(sql_replies)
+        self.prompts: list[str] = []  # every prompt received, for assertions
 
     def complete(self, system: str, prompt: str) -> LLMResponse:
+        self.prompts.append(prompt)
         if "explain data results" in system:  # the summarize prompt
             return LLMResponse("There are 5 regions.")
         return LLMResponse(f"```sql\n{self.sql_replies.pop(0)}\n```")
@@ -52,7 +54,37 @@ def test_repairs_validation_error(wh):
 
 
 def test_gives_up_after_max_repairs(wh):
-    llm = FakeLLM(["SELECT nope FROM region"] * (MAX_REPAIRS + 1))
+    # Every attempt is different but still broken, so all repairs are used.
+    llm = FakeLLM([f"SELECT nope{i} FROM region" for i in range(MAX_REPAIRS + 1)])
     state = build_graph(llm, wh).invoke({"question": "how many regions?"})
     assert state["attempts"] == MAX_REPAIRS
+    assert not state["repeated"]
     assert "could not answer" in state["answer"]
+
+
+def test_stops_early_when_repair_repeats_itself(wh):
+    # The repair returns the same broken SQL (different spacing and case).
+    llm = FakeLLM(["SELECT nope FROM region", "select   nope\nfrom REGION"])
+    state = build_graph(llm, wh).invoke({"question": "how many regions?"})
+    assert state["attempts"] == 1
+    assert state["repeated"]
+    assert "stopped early" in state["answer"]
+
+
+def test_repair_prompt_lists_all_failed_attempts(wh):
+    llm = FakeLLM(["SELECT nope1 FROM region", "SELECT nope2 FROM region", "SELECT count(*) FROM region"])
+    state = build_graph(llm, wh).invoke({"question": "how many regions?"})
+    assert state["rows"] == [(5,)]
+    second_repair_prompt = llm.prompts[2]
+    assert "Attempt 1" in second_repair_prompt and "nope1" in second_repair_prompt
+    assert "Attempt 2" in second_repair_prompt and "nope2" in second_repair_prompt
+
+
+def test_canonical_sql_ignores_identifier_case_but_not_literals():
+    from backend.agent.nodes import _canonical_sql
+
+    tables = ["customer"]
+    assert _canonical_sql("select C_NAME from CUSTOMER", tables, "duckdb") == \
+        _canonical_sql("SELECT c_name FROM customer LIMIT 1000", tables, "duckdb")
+    assert _canonical_sql("SELECT 1 FROM customer WHERE c_name = 'A'", tables, "duckdb") != \
+        _canonical_sql("SELECT 1 FROM customer WHERE c_name = 'a'", tables, "duckdb")

@@ -490,7 +490,9 @@ questions:
 
   - id: h12
     difficulty: hard
-    question: What percentage of total revenue comes from the top 10% of sellers by revenue?
+    # Reworded 2026-10-02 from "top 10% of sellers", which had two valid
+    # readings (top 309 or top 310 of 3,095 sellers). No tie at rank 100.
+    question: What percentage of total revenue comes from the top 100 sellers by revenue?
     traps: [revenue]
     sql: |
       WITH seller_rev AS (
@@ -499,8 +501,8 @@ questions:
         GROUP BY seller_id
       ),
       ranked AS (
-        SELECT revenue, NTILE(10) OVER (ORDER BY revenue DESC) AS decile
+        SELECT revenue, ROW_NUMBER() OVER (ORDER BY revenue DESC) AS seller_rank
         FROM seller_rev
       )
-      SELECT 100.0 * SUM(CASE WHEN decile = 1 THEN revenue END) / SUM(revenue) AS pct_from_top_10pct
+      SELECT 100.0 * SUM(CASE WHEN seller_rank <= 100 THEN revenue END) / SUM(revenue) AS pct_from_top_100
       FROM ranked

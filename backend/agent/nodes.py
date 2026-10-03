@@ -5,6 +5,9 @@ LangGraph merges those changes into the state for the next node.
 """
 import re
 
+import sqlglot
+from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
+
 from backend.agent import prompts, semantic
 from backend.agent.state import AgentState
 from backend.formatting import format_table
@@ -40,7 +43,10 @@ def write_sql(state: AgentState, llm: LLM, warehouse: Warehouse) -> dict:
         system=prompts.WRITE_SQL_SYSTEM.format(dialect=warehouse.dialect),
         prompt=prompts.WRITE_SQL_USER.format(schema=state["schema_context"], question=state["question"]),
     )
-    return {"sql": extract_sql(response.text), "attempts": 0, "error": "", **_tokens(state, response)}
+    return {
+        "sql": extract_sql(response.text), "attempts": 0, "error": "",
+        "history": [], "repeated": False, **_tokens(state, response),
+    }
 
 
 def validate(state: AgentState, warehouse: Warehouse) -> dict:
@@ -59,16 +65,44 @@ def execute(state: AgentState, warehouse: Warehouse) -> dict:
 
 
 def repair_sql(state: AgentState, llm: LLM, warehouse: Warehouse) -> dict:
+    # Show the model every failed attempt, not just the last one, so it can see
+    # what it already tried instead of rediscovering the same mistake.
+    history = state.get("history", []) + [{"sql": state["sql"], "error": state["error"]}]
     response = llm.complete(
         system=prompts.WRITE_SQL_SYSTEM.format(dialect=warehouse.dialect),
         prompt=prompts.REPAIR_SQL_USER.format(
             schema=state["schema_context"],
             question=state["question"],
-            sql=state["sql"],
-            error=state["error"],
+            attempts=_format_attempts(history),
         ),
     )
-    return {"sql": extract_sql(response.text), "attempts": state["attempts"] + 1, **_tokens(state, response)}
+    new_sql = extract_sql(response.text)
+    attempts = state["attempts"] + 1
+    update = {"sql": new_sql, "attempts": attempts, "history": history, **_tokens(state, response)}
+
+    # Stop early if the model repeats an earlier attempt. At temperature 0 the
+    # same SQL fails the same way, so further repairs would only waste time.
+    tried = {_canonical_sql(h["sql"], state["tables"], warehouse.dialect) for h in history}
+    if _canonical_sql(new_sql, state["tables"], warehouse.dialect) in tried:
+        update["repeated"] = True
+        update["error"] = f"{state['error']} (stopped early: repair attempt {attempts} repeated an earlier query)"
+    return update
+
+
+def _format_attempts(history: list[dict]) -> str:
+    return "\n\n".join(
+        f"Attempt {i}:\n```sql\n{h['sql']}\n```\nError: {h['error']}" for i, h in enumerate(history, 1)
+    )
+
+
+def _canonical_sql(sql: str, tables: list[str], dialect: str) -> str:
+    """Normalize SQL so cosmetic differences (spacing, case, added LIMIT) don't hide a repeat."""
+    result = validate_sql(sql, set(tables), dialect=dialect)
+    if not result.ok:  # unparseable: fall back to comparing the text loosely
+        return " ".join(sql.lower().split())
+    # Lowercase unquoted table/column names only; string literals like 'SP' keep their case.
+    tree = normalize_identifiers(sqlglot.parse_one(result.sql, read=dialect), dialect=dialect)
+    return tree.sql(dialect=dialect)
 
 
 def summarize(state: AgentState, llm: LLM) -> dict:

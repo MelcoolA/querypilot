@@ -8,18 +8,18 @@ Baseline run: 2026-10-02, `LLM_PROVIDER=ollama`, `qwen2.5-coder:7b`. Raw output
 is frozen in `evals/results/baseline/`. Correct answers come from the gold SQL
 in `evals/gold.yaml` (gold id shown next to each question).
 
-| # | Question | Before | After fix 1 (semantic layer) |
-|---|---|---|---|
-| 1 | How many orders were delivered? | ✅ Correct | ✅ Correct |
-| 2 | What is the average review score? | ⚠️ Right number, wrong explanation | ⚠️ Right number, wrong explanation |
-| 3 | How many orders were paid by each payment type? | ❌ Counted payment rows | ❌ Counted payment rows |
-| 4 | Which 5 states have the most customers? | ❌ Counted orders, not customers | ✅ Fixed |
-| 5 | What are the top 5 product categories by revenue? | ❌ Wrong revenue formula | ✅ Fixed |
-| 6 | What is the average delivery time in days by state? | ❌ Failed after 3 repairs | ❌ Wrong join, misleading answer |
-| 7 | Do late deliveries get worse reviews? | ❌ Opposite of the truth | ❌ No comparison group |
-| 8 | Which month had the highest number of orders? | ✅ Correct | ✅ Correct |
+| # | Question | Before | After fix 1 (semantic layer) | After fix 2 (repair loop) |
+|---|---|---|---|---|
+| 1 | How many orders were delivered? | ✅ Correct | ✅ Correct | ✅ Correct |
+| 2 | What is the average review score? | ⚠️ Right number, wrong explanation | ⚠️ Right number, wrong explanation | ⚠️ Same |
+| 3 | How many orders were paid by each payment type? | ❌ Counted payment rows | ❌ Counted payment rows | ❌ Same |
+| 4 | Which 5 states have the most customers? | ❌ Counted orders, not customers | ✅ Fixed | ✅ Correct |
+| 5 | What are the top 5 product categories by revenue? | ❌ Wrong revenue formula | ✅ Fixed | ✅ Correct |
+| 6 | What is the average delivery time in days by state? | ❌ Failed after 3 repairs | ❌ Wrong join, misleading answer | ❌ Honest give-up (was misleading) |
+| 7 | Do late deliveries get worse reviews? | ❌ Opposite of the truth | ❌ No comparison group | ❌ Same |
+| 8 | Which month had the highest number of orders? | ✅ Correct | ✅ Correct | ✅ Correct |
 
-Baseline score: 2 of 8 fully correct. After fix 1: 4 of 8.
+Baseline score: 2 of 8 fully correct. After fix 1: 4 of 8. After fix 2: 4 of 8.
 
 ---
 
@@ -56,6 +56,10 @@ LIMIT 1000
 
 **Why:** Same correct SQL as before.
 
+### After fix 2, repair loop: unchanged
+
+**Why:** Same SQL and outcome as fix 1; this question never needed a repair.
+
 ---
 
 ## 2. What is the average review score? (e02)
@@ -87,6 +91,10 @@ LIMIT 1000
 > The average review score is 4.09. The SQL query calculated this by averaging the review scores from the first 1000 rows in the `order_reviews` table.
 
 **Why:** SQL correct; the summary still claims the average used only the first 1000 rows (summarize fix pending).
+
+### After fix 2, repair loop: unchanged
+
+**Why:** Same SQL and answer as fix 1; the summary still says "first 1000 rows".
 
 ---
 
@@ -123,6 +131,10 @@ LIMIT 1000
 > The number of orders paid by each payment type is as follows: 19,784 boleto, 76,795 credit card, 5,775 voucher, 1,529 debit card, and 3 not defined.
 
 **Why:** Unchanged: still COUNT(order_id) on order_payments, despite the order count definition in the semantic layer.
+
+### After fix 2, repair loop: unchanged
+
+**Why:** Same SQL as fix 1 (still counts payment rows); no repair was needed because the query runs fine.
 
 ---
 
@@ -164,6 +176,10 @@ LIMIT 5
 > The five states with the most customers are SP (São Paulo) with 40,302 customers, RJ (Rio de Janeiro) with 12,384 customers, MG (Minas Gerais) with 11,259 customers, RS (Rio Grande do Sul) with 5,277 customers, and PR (Paraná) with 4,882 customers.
 
 **Why:** Now counts DISTINCT customer_unique_id, as the customer definition says.
+
+### After fix 2, repair loop: unchanged
+
+**Why:** Same SQL and outcome as fix 1; this question never needed a repair.
 
 ---
 
@@ -211,6 +227,10 @@ LIMIT 5
 
 **Why:** Revenue is now SUM(price) with English category names, as the revenue definition says.
 
+### After fix 2, repair loop: unchanged
+
+**Why:** Same SQL and outcome as fix 1; this question never needed a repair.
+
 ---
 
 ## 6. What is the average delivery time in days by state? (h01)
@@ -256,6 +276,30 @@ LIMIT 1000
 
 **Why:** Grouped by seller_state with a nonsense join (customer_id = seller_id), got 0 rows, and the summary claimed no delivery data exists; worse than giving up.
 
+### After fix 2, repair loop: ❌ Honest give-up (was a misleading answer)
+
+```sql
+SELECT
+  s.seller_state,
+  AVG(
+    DATE_DIFF('SECOND', o.order_purchase_timestamp, o.order_delivered_customer_date) / 86400.0
+  ) AS avg_delivery_time
+FROM orders AS o
+JOIN sellers AS s
+  ON o.seller_id = s.seller_id
+WHERE
+  o.order_status = 'delivered' AND o.order_delivered_customer_date IS NOT NULL
+GROUP BY
+  s.seller_state
+```
+
+> I could not answer this confidently. After 1 repair attempts the query still failed with: BinderException: Binder Error: Table "o" does not have a column named "seller_id"
+> Candidate bindings: : "order_id"
+> LINE 8:   ON o.seller_id = s.seller_id
+>              ^ (stopped early: repair attempt 1 repeated an earlier query)
+
+**Why:** The repair returned its first query again, so the loop stopped after 1 repair instead of trying a nonsense join; the agent now admits it can't answer instead of claiming the data doesn't exist.
+
 ---
 
 ## 7. Do late deliveries get worse reviews? (h02)
@@ -298,6 +342,10 @@ LIMIT 1000
 
 **Why:** Looked only at late orders (65% scored 3 or lower) with no on-time group; the conclusion is correct but the query does not support it.
 
+### After fix 2, repair loop: unchanged
+
+**Why:** Same SQL and answer as fix 1; still no on-time group to compare against.
+
 ---
 
 ## 8. Which month had the highest number of orders? (m04)
@@ -336,3 +384,7 @@ LIMIT 1
 > The month with the highest number of orders was November 2017, with 7,544 distinct orders.
 
 **Why:** Same answer; now uses COUNT(DISTINCT order_id).
+
+### After fix 2, repair loop: unchanged
+
+**Why:** Same SQL and outcome as fix 1; this question never needed a repair.

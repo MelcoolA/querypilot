@@ -7,6 +7,7 @@ One entry per change to the agent, with the eval score after it. Dataset: Olist
 |---|---|---|---|---|---|---|---|
 | 1 | Baseline, no fixes | qwen2.5-coder:7b | 14/40 (35%) | 10/12 | 3/16 | 1/12 | 4 gave up, 43.2s avg, 0.35 repairs avg |
 | 2 | Semantic layer (`semantic/olist.yaml`) | qwen2.5-coder:7b | **29/40 (72%)** | 12/12 | 12/16 | 5/12 | 1 gave up, 40.1s avg, 0.17 repairs avg |
+| 3 | Repair loop: attempt history, stop on repeat (h12 reworded) | qwen2.5-coder:7b | 30/40 (75%) | 12/12 | 12/16 | 6/12 | +1 is from rewording h12, not the fix; 2 gave up, 40.9s avg |
 
 ## 0. Gold set created
 
@@ -93,3 +94,40 @@ Three problems found and fixed while running this step:
 Open question: h12 ("top 10% of sellers") returned 67.49% vs gold 67.56%.
 The agent took the top 309 of 3,095 sellers, the gold query (NTILE) the top
 310. Both are reasonable readings of "top 10%"; kept as wrong for now.
+
+## 3. Repair loop: 30/40 (75%), but the fix itself added 0
+
+Changes:
+- Repair prompts list every failed attempt with its error, not just the last
+  one, and say not to repeat any of them.
+- If a repair returns SQL it already tried (compared after normalizing
+  spacing, keyword and identifier case, and the added LIMIT; string literals
+  keep their case), the agent stops at once and says why.
+- Same step: h12 reworded from "top 10% of sellers" (two valid readings,
+  309 or 310 sellers) to "top 100 sellers" (one reading, no tie at rank 100).
+
+Results: `results/2026-10-02_163504_ollama-qwen2.5-coder-7b_fix2-repair/`.
+
+Honest attribution: the only new pass is h12, and the fix 1 code also passes
+the reworded h12 (checked by running it on commit b611b6d). So the rewording
+earned the point, and the repair-loop fix changed the score by 0. Measured
+on the same questions, fix 1 would be 30/40 too.
+
+What the fix did change:
+- **h01: misleading answer -> honest give-up.** In fix 1 the repair produced
+  a nonsense join, got 0 rows, and the summary claimed "There are no delivery
+  times available in the data." Now the repair repeats the first query, the
+  loop stops, and the agent says it could not answer. Same score, much safer
+  for a business user.
+- **h10: 109s -> 58s.** Stopped after 1 identical repair instead of 3.
+- Total run time did not drop (1,603s vs 1,636s): the savings on h10 were
+  offset by longer repair prompts elsewhere (h06, h12).
+- Every early stop happened on the first repair: even with its history in
+  front of it, the 7B model repeated its first query rather than trying a
+  new approach. The failures left (h01 reads seller_id from orders, h10 reads
+  product_id from order_reviews) need a different join path, which it did
+  not find on its own.
+
+Takeaway: the repair loop is now cheaper and more honest, but repairs are
+not where qwen2.5-coder:7b's accuracy is lost. The remaining failures are
+wrong logic in SQL that runs without errors, which no repair ever sees.
