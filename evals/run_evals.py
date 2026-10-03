@@ -17,7 +17,7 @@ from pathlib import Path
 
 import yaml
 
-from backend.agent import nodes, prompts, semantic
+from backend.agent.warmup import needs_warm_up, warm_up
 from backend.agent.graph import build_graph
 from backend.llm import get_llm
 from backend.warehouse import DATASET_PATHS
@@ -59,7 +59,8 @@ def main() -> None:
     agent = build_graph(llm, warehouse)
 
     print(f"Running {len(questions)} questions | model {llm.name} | dataset {gold['dataset']}")
-    warm_up(llm, warehouse)
+    if needs_warm_up(llm):  # untimed, so question 1's latency is comparable
+        warm_up(llm, warehouse)
 
     results = []
     for i, q in enumerate(questions, 1):
@@ -74,24 +75,6 @@ def main() -> None:
     print("\n" + summary)
     save(out_dir, results, summary, llm.name, protect=args.baseline)
     print(f"Saved to {out_dir}")
-
-
-def warm_up(llm, warehouse) -> None:
-    """Send one untimed request with the real schema prompt before scoring starts.
-
-    Local models load into memory on first use, and Ollama caches the processed
-    prompt prefix (the ~3k-token schema shared by every question). Without this,
-    the first question alone pays both costs and skews average latency.
-    """
-    schema = nodes.get_schema({}, warehouse)["schema_context"]
-    llm.complete(
-        prompts.WRITE_SQL_SYSTEM.format(dialect=warehouse.dialect),
-        prompts.WRITE_SQL_USER.format(
-            schema=schema,
-            examples=semantic.render_examples(semantic.load_semantic(warehouse.dataset)),
-            question="How many rows are in the orders table?",
-        ),
-    )
 
 
 def run_one(q: dict, agent, warehouse, model: str, label: str = "") -> dict:

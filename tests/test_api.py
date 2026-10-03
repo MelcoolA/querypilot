@@ -64,3 +64,8 @@ def test_decimals_and_dates_become_json():
 
 def test_question_is_validated():
     assert client_with([]).post("/ask", json={"question": ""}).status_code == 422
+
+
+def test_health_reports_ready_when_no_warm_up_needed():
+    # The fake LLM is not a local model, so there is nothing to warm up.
+    assert client_with([]).get("/health").json()["ready"] is True

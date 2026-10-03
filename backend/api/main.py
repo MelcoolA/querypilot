@@ -7,8 +7,10 @@ event per graph step, then a final "result" event. It is one-way (server to
 browser), which is all "show the steps live" needs, so no WebSocket.
 """
 import json
+import sys
 import threading
 import time
+from contextlib import asynccontextmanager
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -18,6 +20,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from backend.agent.graph import build_graph
+from backend.agent.warmup import needs_warm_up, warm_up
 from backend.formatting import describe_step
 from backend.llm import LLM, get_llm
 from backend.warehouse import Warehouse, get_warehouse
@@ -46,15 +49,35 @@ def create_app(llm: LLM | None = None, warehouse: Warehouse | None = None) -> Fa
     # One question at a time: all requests share one DuckDB connection, and a
     # local model answers one request at a time anyway. Fine for a demo.
     lock = threading.Lock()
+    status = {"ready": not needs_warm_up(llm)}
 
-    app = FastAPI(title="QueryPilot", description="Ask questions about your data in plain English.")
+    def warm() -> None:
+        # Holds the lock, so a question asked during warm-up waits for it
+        # instead of competing with it for the local model.
+        with lock:
+            try:
+                warm_up(llm, warehouse)
+            except Exception as e:  # e.g. Ollama not running; questions will report it
+                print(f"[api] warm-up failed: {type(e).__name__}: {e}", file=sys.stderr)
+            status["ready"] = True
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        if not status["ready"]:
+            # Background thread: the server accepts requests immediately.
+            threading.Thread(target=warm, daemon=True).start()
+        yield
+
+    app = FastAPI(
+        title="QueryPilot", description="Ask questions about your data in plain English.", lifespan=lifespan
+    )
     app.add_middleware(
         CORSMiddleware, allow_origins=[FRONTEND_ORIGIN], allow_methods=["GET", "POST"], allow_headers=["*"]
     )
 
     @app.get("/health")
     def health() -> dict:
-        return {"status": "ok", "model": llm.name, "dataset": warehouse.dataset}
+        return {"status": "ok", "ready": status["ready"], "model": llm.name, "dataset": warehouse.dataset}
 
     @app.get("/examples")
     def examples() -> dict:
