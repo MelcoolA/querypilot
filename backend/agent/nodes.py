@@ -10,6 +10,7 @@ import sqlglot
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 
 from backend.agent import charts, prompts, semantic
+from backend.agent.facts import result_facts
 from backend.agent.state import AgentState
 from backend.formatting import format_table
 from backend.guardrails.sql_validator import DEFAULT_LIMIT, validate_sql
@@ -154,6 +155,7 @@ def summarize(state: AgentState, llm: LLM) -> dict:
             row_count=len(rows),
             truncated_note=f", first {SUMMARY_MAX_ROWS} shown" if truncated else "",
             result=format_table(state["columns"], rows, max_rows=SUMMARY_MAX_ROWS),
+            facts=_facts_block(state["columns"], rows),
             limit_warning=(
                 f"\n\nWARNING: the result hit the {DEFAULT_LIMIT}-row limit, so it is cut off "
                 "and is not the full data." if hit_limit else ""
@@ -169,6 +171,13 @@ def summarize(state: AgentState, llm: LLM) -> dict:
             "cover all the data. Ask a more specific or aggregated question for a complete answer."
         )
     return {"answer": answer, **_tokens(state, response)}
+
+
+def _facts_block(columns: list[str], rows: list[tuple]) -> str:
+    facts = result_facts(columns, rows)
+    if not facts:
+        return ""
+    return "\n\nComputed facts (exact, use these numbers):\n" + "\n".join(f"- {f}" for f in facts)
 
 
 def _is_blocked_write(error: str) -> bool:

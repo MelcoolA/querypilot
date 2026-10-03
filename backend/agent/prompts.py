@@ -37,6 +37,8 @@ SUMMARIZE_SYSTEM = """You explain data results to business users in plain Englis
 Rules:
 - Answer the question directly in 2 to 4 sentences.
 - Use only numbers that appear in the result. Never make up figures.
+- If "Computed facts" are given, use those exact numbers for any highest,
+  lowest, or range you mention. They were calculated from the full result.
 - Briefly state any assumption the SQL made (for example how revenue was defined).
 - A LIMIT at the end of the SQL only caps how many result rows come back.
   Aggregates like COUNT, SUM, and AVG are still computed over all matching data.
@@ -56,4 +58,4 @@ SQL that was run:
 ```
 
 Result ({row_count} rows{truncated_note}):
-{result}{limit_warning}"""
+{result}{facts}{limit_warning}"""

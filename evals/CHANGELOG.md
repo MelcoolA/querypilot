@@ -268,3 +268,15 @@ Takeaways:
 - **The eval is now saturated for Claude.** 40/40 means this gold set can no
   longer measure improvements for a strong model. A harder or more ambiguous
   question set is needed to keep using it as a yardstick (see next steps).
+
+## Answer-quality fix: computed facts in the summary (no score change)
+
+Seen in the web UI, on DuckDB and again on Snowflake: for "How many orders
+were placed each month in 2017?" the SQL and data were right, but qwen's
+summary said the range was "5,673 in December to 8,000 in January" (the
+table said January was 800; the true range is 800 to 7,544). The summarize
+step now gets "Computed facts" worked out in code: the lowest and highest
+value of each number column with the row it belongs to, and the row count.
+After the change the same question answers "ranged from 800 in January to
+7,544 in November". The eval scores SQL results, not answer text, so the
+scores above are unaffected.
