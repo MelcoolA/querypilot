@@ -24,7 +24,10 @@ def get_warehouse() -> Warehouse:
             raise ValueError(f"Unknown DATASET: {dataset!r} (expected one of {', '.join(DATASET_PATHS)})")
         return DuckDBWarehouse(DATASET_PATHS[dataset], dataset=dataset)
     if backend == "snowflake":
-        raise NotImplementedError("Snowflake backend arrives in Phase 4.")
+        from backend.warehouse.snowflake_wh import SnowflakeWarehouse
+
+        # Only Olist is loaded into Snowflake (see make data-snowflake).
+        return SnowflakeWarehouse(dataset="olist")
     raise ValueError(f"Unknown WAREHOUSE: {backend!r} (expected 'duckdb' or 'snowflake')")
 
 

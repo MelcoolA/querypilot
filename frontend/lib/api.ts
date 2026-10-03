@@ -34,7 +34,7 @@ export type AskResult = {
   model: string;
 };
 
-export type Health = { status: string; ready: boolean; model: string; dataset: string };
+export type Health = { status: string; ready: boolean; model: string; dataset: string; warehouse: string };
 
 export async function getHealth(): Promise<Health> {
   const res = await fetch(`${API_URL}/health`);

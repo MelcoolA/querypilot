@@ -15,7 +15,7 @@ def warm_up(llm: LLM, warehouse: Warehouse) -> None:
         prompts.WRITE_SQL_SYSTEM.format(dialect=warehouse.dialect),
         prompts.WRITE_SQL_USER.format(
             schema=schema,
-            examples=semantic.render_examples(semantic.load_semantic(warehouse.dataset)),
+            examples=semantic.render_examples(semantic.load_semantic(warehouse.dataset), warehouse.dialect),
             question="How many rows are in the orders table?",
         ),
     )

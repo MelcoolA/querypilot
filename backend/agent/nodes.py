@@ -4,6 +4,7 @@ A node receives the current state and returns only the fields it changed.
 LangGraph merges those changes into the state for the next node.
 """
 import re
+from functools import lru_cache
 
 import sqlglot
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
@@ -19,11 +20,20 @@ SUMMARY_MAX_ROWS = 30  # rows shown to the LLM when summarizing; keeps the promp
 
 
 def get_schema(state: AgentState, warehouse: Warehouse) -> dict:
-    # TPC-H has only 8 tables, so Phase 1 sends all of them. A real warehouse with
-    # hundreds of tables needs a table-selection step here instead.
+    tables, context = _schema_context(warehouse)
+    return {"tables": tables, "schema_context": context}
+
+
+# The schema doesn't change while the app runs, so build the context once per
+# warehouse and reuse it. On DuckDB that saves little; on Snowflake it saves
+# ~20 network round trips (and warehouse credits) on every question.
+@lru_cache(maxsize=8)
+def _schema_context(warehouse: Warehouse) -> tuple[list[str], str]:
+    # All 8 Olist tables fit in the prompt. A warehouse with hundreds of tables
+    # would need a table-selection step here instead.
     tables = warehouse.list_tables()
     sem = semantic.load_semantic(warehouse.dataset)  # None if the dataset has no semantic layer
-    blocks = [semantic.render_header(sem)] if sem else []
+    blocks = [semantic.render_header(sem, warehouse.dialect)] if sem else []
     for name in tables:
         info = warehouse.describe_table(name)
         sample = format_table(info.sample.columns, info.sample.rows)
@@ -35,7 +45,7 @@ def get_schema(state: AgentState, warehouse: Warehouse) -> dict:
         else:
             cols = ", ".join(f"{c} {t}" for c, t in info.columns)
             blocks.append(f"TABLE {name} ({cols})\nSample rows:\n{sample}")
-    return {"tables": tables, "schema_context": "\n\n".join(blocks)}
+    return tables, "\n\n".join(blocks)
 
 
 def write_sql(state: AgentState, llm: LLM, warehouse: Warehouse) -> dict:
@@ -43,7 +53,7 @@ def write_sql(state: AgentState, llm: LLM, warehouse: Warehouse) -> dict:
         system=prompts.WRITE_SQL_SYSTEM.format(dialect=warehouse.dialect),
         prompt=prompts.WRITE_SQL_USER.format(
             schema=state["schema_context"],
-            examples=semantic.render_examples(semantic.load_semantic(warehouse.dataset)),
+            examples=semantic.render_examples(semantic.load_semantic(warehouse.dataset), warehouse.dialect),
             question=state["question"],
         ),
     )

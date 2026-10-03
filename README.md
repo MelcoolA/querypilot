@@ -10,7 +10,7 @@ own errors, and explains the answer, always showing the SQL it ran.
 ![QueryPilot answering "Which 5 customer states generated the most revenue?": the agent's steps, then a bar chart](docs/images/ui-bar-chart.png)
 
 > **Status:** the agent, guardrails, semantic layer, evals, streaming API, and
-> web UI all run locally on DuckDB. Snowflake and deployment are next.
+> web UI run on local DuckDB or on Snowflake. Deployment is next.
 
 ## Results
 
@@ -61,7 +61,7 @@ flowchart LR
     AG --> WH[Warehouse layer<br/>backend/warehouse]
     WH --> D1[(DuckDB<br/>Olist)]
     WH --> D2[(DuckDB<br/>TPC-H)]
-    WH -.-> SF[(Snowflake<br/>planned)]
+    WH --> SF[(Snowflake<br/>Olist, read-only role)]
     AG -.-> LS[LangSmith<br/>traces, optional]
 ```
 
@@ -219,6 +219,27 @@ make data
 gives tables short names, stores dates as timestamps, joins English category
 names into `products`, and reduces geolocation to one row per zip prefix so
 joins don't multiply rows.
+
+### Optional: Snowflake
+
+The same Olist tables can live in Snowflake; set `WAREHOUSE=snowflake` and
+the CLI, API, UI, and evals use it instead of DuckDB.
+
+1. Create a [Snowflake trial](https://signup.snowflake.com) account.
+2. Run `snowflake/setup.sql` as ACCOUNTADMIN in a Snowsight worksheet. It
+   creates an X-Small warehouse (60s auto-suspend, 30s statement timeout), a
+   5-credit monthly resource monitor, a read-only role, and a SERVICE user for
+   the agent that signs in with an RSA key pair, not a password.
+3. Run `snowflake/loader_user.sql` (a separate, short-lived loader user),
+   then `make data-snowflake`. It loads every table and checks each row count
+   against DuckDB. Disable the loader afterwards.
+4. Fill in `SNOWFLAKE_ACCOUNT` in `.env`, set `WAREHOUSE=snowflake`.
+
+Key pairs live in `.secrets/` (gitignored). Read-only access and the query
+timeout are enforced by Snowflake itself, in addition to the SQL validator.
+The semantic layer is written once in DuckDB SQL; worked examples are
+translated to Snowflake SQL with sqlglot, and a definition can carry a
+Snowflake-specific version where the spelling differs.
 
 ### Choosing the LLM
 

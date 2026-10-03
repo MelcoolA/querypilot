@@ -34,9 +34,14 @@ definitions:
   delivery metrics: >
     For delivery time or lateness, use delivered orders that also have a
     delivery date: order_status = 'delivered' AND order_delivered_customer_date IS NOT NULL.
-  delivery time: >
-    Days from purchase to delivery, as a fraction:
-    DATE_DIFF('second', order_purchase_timestamp, order_delivered_customer_date) / 86400.0.
+  # A definition can be a string, or per-dialect text when the SQL differs.
+  delivery time:
+    default: >
+      Days from purchase to delivery, as a fraction:
+      DATE_DIFF('second', order_purchase_timestamp, order_delivered_customer_date) / 86400.0.
+    snowflake: >
+      Days from purchase to delivery, as a fraction:
+      DATEDIFF('second', order_purchase_timestamp, order_delivered_customer_date) / 86400.0.
   late delivery: >
     An order (see delivery metrics) where order_delivered_customer_date > order_estimated_delivery_date.
   percentage: >

@@ -164,7 +164,7 @@ function StatusPill({ health, offline }: { health: Health | null; offline: boole
   const state = health.ready ? "ready" : "warming up";
   return (
     <span className={`${styles.pill} ${health.ready ? styles.pillOk : styles.pillWarn}`}>
-      {health.model} · {health.dataset} · {state}
+      {health.model} · {health.dataset} on {health.warehouse} · {state}
     </span>
   );
 }

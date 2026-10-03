@@ -28,7 +28,8 @@ def events(response) -> list[tuple[str, dict]]:
 
 def test_health_and_examples():
     client = client_with([])
-    assert client.get("/health").json()["status"] == "ok"
+    health = client.get("/health").json()
+    assert health["status"] == "ok" and health["warehouse"] == "duckdb"
     assert len(client.get("/examples").json()["questions"]) >= 3
 
 

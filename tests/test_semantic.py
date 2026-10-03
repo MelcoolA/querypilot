@@ -65,3 +65,20 @@ def test_examples_render_only_for_datasets_that_have_them():
 
     assert render_examples(load_semantic("olist")).startswith("EXAMPLES")
     assert render_examples(None) == ""
+
+
+def test_definitions_use_the_warehouse_dialect():
+    from backend.agent.semantic import render_header
+
+    sem = load_semantic("olist")
+    assert "DATE_DIFF('second'" in render_header(sem, "duckdb")
+    snowflake = render_header(sem, "snowflake")
+    assert "DATEDIFF('second'" in snowflake and "DATE_DIFF" not in snowflake
+
+
+def test_examples_are_translated_for_snowflake_only():
+    from backend.agent.semantic import render_examples
+
+    sem = load_semantic("olist")
+    assert render_examples(sem, "duckdb") == render_examples(sem)  # DuckDB prompt unchanged
+    assert render_examples(sem, "snowflake") != render_examples(sem, "duckdb")

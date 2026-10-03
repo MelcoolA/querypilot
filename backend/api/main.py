@@ -77,7 +77,13 @@ def create_app(llm: LLM | None = None, warehouse: Warehouse | None = None) -> Fa
 
     @app.get("/health")
     def health() -> dict:
-        return {"status": "ok", "ready": status["ready"], "model": llm.name, "dataset": warehouse.dataset}
+        return {
+            "status": "ok",
+            "ready": status["ready"],
+            "model": llm.name,
+            "dataset": warehouse.dataset,
+            "warehouse": warehouse.dialect,  # "duckdb" or "snowflake"
+        }
 
     @app.get("/examples")
     def examples() -> dict:
