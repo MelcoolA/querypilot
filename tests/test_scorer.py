@@ -66,3 +66,11 @@ def test_year_as_date_matches_year_as_number():
 
 def test_january_month_still_matches_as_date():
     assert ok([(datetime(2018, 1, 1), 7269)], [("2018-01", 7269)])
+
+
+def test_cost_uses_price_table():
+    from evals.run_evals import cost
+
+    assert cost("ollama:qwen2.5-coder:7b", 5000, 150) == 0.0
+    assert cost("anthropic:claude-sonnet-5-5", 1_000_000, 100_000) == 2.00 + 1.00
+    assert cost("anthropic:some-unpriced-model", 10, 10) is None

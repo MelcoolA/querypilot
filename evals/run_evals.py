@@ -30,8 +30,12 @@ BASELINE_DIR = RESULTS_DIR / "baseline"
 DIFFICULTIES = ["easy", "medium", "hard"]
 
 # USD per million tokens (input, output). Local models cost nothing to call.
-# Add an entry before running a paid model; unknown models report cost as n/a.
-PRICES_PER_MTOK: dict[str, tuple[float, float]] = {}
+# Anthropic list prices, checked 2026-10-02. Output includes thinking tokens.
+# Unknown models report cost as n/a.
+PRICES_PER_MTOK: dict[str, tuple[float, float]] = {
+    "anthropic:claude-sonnet-5-5": (2.00, 10.00),
+    "anthropic:claude-opus-5-5": (4.00, 20.00),
+}
 
 
 def main() -> None:

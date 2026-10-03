@@ -21,7 +21,11 @@ def get_llm() -> LLM:
     if provider == "anthropic":
         from backend.llm.anthropic_llm import AnthropicLLM
 
-        return AnthropicLLM(model=_require("ANTHROPIC_MODEL"), api_key=_require("ANTHROPIC_API_KEY"))
+        return AnthropicLLM(
+            model=_require("ANTHROPIC_MODEL"),
+            api_key=_require("ANTHROPIC_API_KEY"),
+            effort=os.getenv("ANTHROPIC_EFFORT", "medium"),
+        )
     raise ValueError(f"Unknown LLM_PROVIDER: {provider!r} (expected 'ollama' or 'anthropic')")
 
 
