@@ -1,0 +1,65 @@
+/* Design tokens: every color comes from here, with a dark-mode version. */
+:root {
+  --bg: #f7f7f8;
+  --surface: #ffffff;
+  --text: #18181b;
+  --muted: #6b7280;
+  --border: #e4e4e7;
+  --accent: #2563eb;
+  --accent-text: #ffffff;
+  --ok: #15803d;
+  --ok-bg: #dcfce7;
+  --warn: #a16207;
+  --warn-bg: #fef9c3;
+  --bad: #b91c1c;
+  --bad-bg: #fee2e2;
+  --radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0b0d;
+    --surface: #17171a;
+    --text: #ececef;
+    --muted: #9ca3af;
+    --border: #2a2a2f;
+    --accent: #3b82f6;
+    --accent-text: #ffffff;
+    --ok: #4ade80;
+    --ok-bg: #14321f;
+    --warn: #facc15;
+    --warn-bg: #3a3112;
+    --bad: #f87171;
+    --bad-bg: #3b1515;
+  }
+  html {
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100vh;
+  color: var(--text);
+  background: var(--bg);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}

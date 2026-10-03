@@ -303,6 +303,19 @@ curl -N -X POST localhost:8000/ask -H 'Content-Type: application/json' \
   -d '{"question": "How many orders were placed each month in 2017?"}'
 ```
 
+### Run the web UI
+
+Requires Node.js 20+. Start the API first, then in a second terminal:
+
+```bash
+cd frontend && npm install && cd ..   # first time only
+make ui                               # http://localhost:3000
+```
+
+Type a question or click an example. The agent's steps appear as they
+happen, then the answer. The status badge shows the model, the dataset, and
+whether the local model has finished warming up.
+
 ### Run the evals and tests
 
 ```bash
