@@ -4,8 +4,8 @@ A text-to-SQL analytics agent. Ask a question in plain English, and the agent
 writes SQL, validates it, runs it read-only against a data warehouse, repairs
 its own errors, and explains the answer.
 
-> Status: Phase 1 (core agent in the terminal) is complete. API, web UI,
-> Snowflake, and evals are in progress.
+> Status: the core agent (Phase 1) and evals with a semantic layer (Phase 2)
+> work in the terminal. API, web UI, and Snowflake are next.
 
 ## How it works
 
@@ -41,7 +41,20 @@ cp .env.example .env
 make data
 ```
 
-To use Claude instead, set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` in `.env`.
+### Choosing the LLM
+
+Both providers are set in `.env`; no code changes needed.
+
+| Setting | Ollama (local, free) | Claude (Anthropic API) |
+|---|---|---|
+| `LLM_PROVIDER` | `ollama` | `anthropic` |
+| Model | `OLLAMA_MODEL=qwen2.5-coder:7b` | `ANTHROPIC_MODEL=<model id>` |
+| Other | `OLLAMA_NUM_CTX=16384` | `ANTHROPIC_API_KEY=<your key>` |
+
+`OLLAMA_NUM_CTX` matters: Ollama's default context is 4,096 tokens, and it
+silently drops part of any longer prompt. The Olist prompt (schema, semantic
+layer, examples) is about 5,000 tokens, so without this setting the model
+never sees the business definitions.
 
 ### Optional: Olist e-commerce dataset
 
@@ -82,10 +95,28 @@ To ask about one dataset without editing `.env`:
 DATASET=olist python -m backend.cli "How many orders were delivered?"
 ```
 
+## Evals
+
+The eval runs the agent on 40 Olist questions (12 easy, 16 medium, 12 hard)
+and compares each result with a hand-written gold query. It needs the Olist
+database (`make data-olist`) and uses whichever LLM `.env` selects.
+
+```bash
+make eval                                   # all 40 questions
+python -m evals.run_evals --ids e01,m03     # a few questions, for quick checks
+python -m evals.rescore evals/results/<run> # re-score a saved run (no LLM calls)
+```
+
+Each run prints accuracy (overall, by difficulty, by trap), latency, tokens,
+cost, and repairs, and saves `results.json` and `summary.md` to
+`evals/results/<date>_<model>/`. The change-by-change history is in
+`evals/CHANGELOG.md`.
+
 ## Tests
 
 ```bash
 make test
 ```
 
-Tests run against TPC-H, so they need `make data` but not the Olist data.
+Most tests run against TPC-H and need `make data`. The semantic layer tests
+use Olist and are skipped if `make data-olist` hasn't been run.

@@ -40,3 +40,29 @@ def test_run_query(wh):
 def test_connection_is_read_only(wh):
     with pytest.raises(duckdb.Error):
         wh.run_query("DELETE FROM region")
+
+
+def test_slow_query_times_out():
+    import time
+
+    from backend.warehouse.base import QueryTimeoutError
+
+    fast_timeout = DuckDBWarehouse(DB_PATH, timeout_s=0.5)
+    start = time.time()
+    with pytest.raises(QueryTimeoutError, match="timed out after 0.5s"):
+        # A cross join of 600k x 600k rows would run for a very long time.
+        fast_timeout.run_query("SELECT count(*) FROM lineitem a, lineitem b WHERE a.l_quantity < b.l_quantity")
+    assert time.time() - start < 5
+
+
+def test_connection_still_works_after_timeout():
+    from backend.warehouse.base import QueryTimeoutError
+
+    wh = DuckDBWarehouse(DB_PATH, timeout_s=0.5)
+    with pytest.raises(QueryTimeoutError):
+        wh.run_query("SELECT count(*) FROM lineitem a, lineitem b WHERE a.l_quantity < b.l_quantity")
+    assert wh.run_query("SELECT count(*) FROM region").rows == [(5,)]
+
+
+def test_default_timeout_is_30_seconds(wh):
+    assert wh.timeout_s == 30

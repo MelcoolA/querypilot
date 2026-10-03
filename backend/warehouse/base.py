@@ -3,6 +3,13 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 
+QUERY_TIMEOUT_S = 30  # guardrail 5: no single query may run longer than this
+
+
+class QueryTimeoutError(Exception):
+    """Raised when a query is cancelled for running longer than the timeout."""
+
+
 @dataclass
 class QueryResult:
     columns: list[str]

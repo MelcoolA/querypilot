@@ -1,10 +1,11 @@
-"""DuckDB backend over a local TPC-H database file."""
+"""DuckDB backend over a local database file (TPC-H or Olist)."""
+import threading
 from functools import lru_cache
 from pathlib import Path
 
 import duckdb
 
-from backend.warehouse.base import QueryResult, TableInfo, Warehouse
+from backend.warehouse.base import QUERY_TIMEOUT_S, QueryResult, QueryTimeoutError, TableInfo, Warehouse
 
 SAMPLE_ROWS = 3
 
@@ -12,8 +13,9 @@ SAMPLE_ROWS = 3
 class DuckDBWarehouse(Warehouse):
     dialect = "duckdb"
 
-    def __init__(self, path: str, dataset: str = ""):
+    def __init__(self, path: str, dataset: str = "", timeout_s: float = QUERY_TIMEOUT_S):
         self.dataset = dataset
+        self.timeout_s = timeout_s
         if not Path(path).exists():
             raise FileNotFoundError(f"{path} not found. Run `make data` to generate TPC-H data.")
         # Guardrail 1: the connection itself is read-only, so even if a write
@@ -43,6 +45,18 @@ class DuckDBWarehouse(Warehouse):
 
     def run_query(self, sql: str) -> QueryResult:
         cursor = self.conn.cursor()  # fresh cursor per query keeps results isolated
-        cursor.execute(sql)
-        columns = [d[0] for d in cursor.description]
-        return QueryResult(columns=columns, rows=cursor.fetchall())
+        # Guardrail 5: DuckDB has no statement timeout setting, so a timer thread
+        # interrupts the query if it runs too long.
+        timer = threading.Timer(self.timeout_s, cursor.interrupt)
+        timer.start()
+        try:
+            cursor.execute(sql)
+            columns = [d[0] for d in cursor.description]
+            rows = cursor.fetchall()
+        except duckdb.InterruptException as e:
+            raise QueryTimeoutError(
+                f"Query timed out after {self.timeout_s:g}s. Write a simpler or more selective query."
+            ) from e
+        finally:
+            timer.cancel()
+        return QueryResult(columns=columns, rows=rows)

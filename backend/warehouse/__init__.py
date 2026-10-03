@@ -3,7 +3,7 @@ import os
 
 from dotenv import load_dotenv
 
-from backend.warehouse.base import QueryResult, TableInfo, Warehouse
+from backend.warehouse.base import QUERY_TIMEOUT_S, QueryResult, QueryTimeoutError, TableInfo, Warehouse
 
 load_dotenv()
 
@@ -28,4 +28,6 @@ def get_warehouse() -> Warehouse:
     raise ValueError(f"Unknown WAREHOUSE: {backend!r} (expected 'duckdb' or 'snowflake')")
 
 
-__all__ = ["DATASET_PATHS", "QueryResult", "TableInfo", "Warehouse", "get_warehouse"]
+__all__ = [
+    "DATASET_PATHS", "QUERY_TIMEOUT_S", "QueryResult", "QueryTimeoutError", "TableInfo", "Warehouse", "get_warehouse",
+]
