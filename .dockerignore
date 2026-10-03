@@ -1,0 +1,14 @@
+# Keep the API image small and free of secrets.
+.git
+.env
+.env.*
+.secrets
+data
+docs
+evals
+tests
+frontend
+**/__pycache__
+**/*.pyc
+.pytest_cache
+personalNotes.txt

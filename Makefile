@@ -1,4 +1,4 @@
-.PHONY: data data-olist data-snowflake test ask eval api ui mcp
+.PHONY: data data-olist data-snowflake test ask eval api ui mcp up down
 
 # Build the local TPC-H database (scale factor 0.1, about 25 MB)
 data:
@@ -33,3 +33,11 @@ ui:
 # Run the MCP server over stdio (normally started by an MCP client, not by hand)
 mcp:
 	python -m backend.mcp_server
+
+# Run everything in Docker (API + UI): http://localhost:3000
+up:
+	docker compose up --build -d
+	@echo "Starting: UI at http://localhost:3000, API at http://localhost:8000 (first start loads the model, about 1 to 2 minutes)"
+
+down:
+	docker compose down

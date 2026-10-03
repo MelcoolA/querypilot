@@ -10,8 +10,8 @@ own errors, and explains the answer, always showing the SQL it ran.
 ![QueryPilot answering "Which 5 customer states generated the most revenue?": the agent's steps, then a bar chart](docs/images/ui-bar-chart.png)
 
 > **Status:** the agent, guardrails, semantic layer, evals, streaming API, and
-> web UI run on local DuckDB or on Snowflake, and an MCP server makes the
-> agent available to Claude Desktop. Deployment is next.
+> web UI run on local DuckDB or on Snowflake, an MCP server makes the agent
+> available to Claude Desktop, and `make up` runs the whole app in Docker.
 
 ## Results
 
@@ -272,6 +272,27 @@ timeout are enforced by Snowflake itself, in addition to the SQL validator.
 The semantic layer is written once in DuckDB SQL; worked examples are
 translated to Snowflake SQL with sqlglot, and a definition can carry a
 Snowflake-specific version where the spelling differs.
+
+### Run everything with Docker
+
+With Docker Desktop running and the data built (step 4 above):
+
+```bash
+make up      # builds and starts the API and the UI: http://localhost:3000
+make down    # stops them
+```
+
+`docker-compose.yml` runs two containers: `api` (FastAPI + agent, port 8000)
+and `ui` (the Next.js production build, port 3000). The local model is not
+containerized: Ollama keeps running on the Mac, where it can use the GPU, and
+the API container reaches it at `host.docker.internal`. The DuckDB files and
+the Snowflake key pair are mounted read-only; `.env` and keys are never baked
+into an image.
+
+With the local model, answers are slower in Docker than natively (about 50s
+instead of 20s on a MacBook Air), because Docker Desktop's virtual machine
+takes memory the model would otherwise use. With `LLM_PROVIDER=anthropic`
+answers take a few seconds either way.
 
 ### Choosing the LLM
 

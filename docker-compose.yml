@@ -1,0 +1,27 @@
+# Run all of QueryPilot locally with one command:
+#   docker compose up --build      then open http://localhost:3000
+#
+# The LLM is not containerized: Ollama keeps running on the Mac (it needs the
+# Mac's GPU), and the API reaches it at host.docker.internal. Claude works too
+# (LLM_PROVIDER=anthropic in .env).
+services:
+  api:
+    build: .
+    env_file: .env                 # model, warehouse, and keys; never baked into the image
+    environment:
+      OLLAMA_HOST: http://host.docker.internal:11434
+    volumes:
+      - ./data:/app/data:ro         # DuckDB files, read-only
+      - ./.secrets:/app/.secrets:ro # Snowflake key pair (only used with WAREHOUSE=snowflake)
+    ports:
+      - "8000:8000"
+
+  ui:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
