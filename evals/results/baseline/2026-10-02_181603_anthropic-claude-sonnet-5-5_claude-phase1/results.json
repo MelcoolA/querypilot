@@ -1,0 +1,674 @@
+{
+  "model": "anthropic:claude-sonnet-5-5",
+  "results": [
+    {
+      "id": "e01",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "How many orders were delivered?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(*) AS delivered_orders\nFROM orders\nWHERE\n  order_status = 'delivered'\nLIMIT 1000",
+      "answer": "A total of 96,478 orders were delivered. This counts every row in the orders table where the order status is \"delivered,\" so orders that are canceled, shipped, or still processing are not included.",
+      "latency_s": 3.63,
+      "repairs": 0,
+      "input_tokens": 3458,
+      "output_tokens": 106,
+      "cost_usd": 0.007976
+    },
+    {
+      "id": "e02",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "What is the average review score?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  AVG(review_score) AS avg_review_score\nFROM order_reviews\nLIMIT 1000",
+      "answer": "The average review score is 4.09. This is a simple average across all rows in the order reviews table, so every review counts equally. The query did not filter by date, product, or any other criteria, and it assumes the scores are on a numeric scale (likely 1 to 5, though the result itself doesn't confirm the range).",
+      "latency_s": 3.1,
+      "repairs": 0,
+      "input_tokens": 3442,
+      "output_tokens": 135,
+      "cost_usd": 0.008234
+    },
+    {
+      "id": "e03",
+      "difficulty": "easy",
+      "traps": [
+        "customer_unique_id"
+      ],
+      "question": "How many unique customers are there?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(DISTINCT customer_unique_id) AS unique_customer_count\nFROM customers\nLIMIT 1000",
+      "answer": "There are 96,096 unique customers in the data. This count comes from the customers table and treats each distinct customer_unique_id as one person, so a customer who appears under multiple records is counted only once.",
+      "latency_s": 2.38,
+      "repairs": 0,
+      "input_tokens": 3456,
+      "output_tokens": 109,
+      "cost_usd": 0.008002
+    },
+    {
+      "id": "e04",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "How many sellers are there?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(DISTINCT seller_id) AS seller_count\nFROM sellers\nLIMIT 1000",
+      "answer": "There are 3,095 sellers in total. This count comes from the sellers table and counts each unique seller ID once, so any duplicate records for the same seller would not inflate the number. It includes every seller in that table, with no filtering by activity, date, or status.",
+      "latency_s": 3.19,
+      "repairs": 0,
+      "input_tokens": 3444,
+      "output_tokens": 123,
+      "cost_usd": 0.008118
+    },
+    {
+      "id": "e05",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "How many orders were canceled?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(*) AS canceled_orders\nFROM orders\nWHERE\n  order_status = 'canceled'\nLIMIT 1000",
+      "answer": "There were 625 canceled orders. This count includes every order in the orders table where the order status is \"canceled\", with no date filter applied, so it covers all time rather than a specific period.",
+      "latency_s": 2.52,
+      "repairs": 0,
+      "input_tokens": 3457,
+      "output_tokens": 104,
+      "cost_usd": 0.007954
+    },
+    {
+      "id": "e06",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "How many orders are there in each order status?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  order_status,\n  COUNT(*) AS order_count\nFROM orders\nGROUP BY\n  order_status\nORDER BY\n  order_count DESC\nLIMIT 1000",
+      "answer": "Most orders are delivered: 96,478 in total. The next largest groups are shipped (1,107), canceled (625), and unavailable (609), followed by invoiced (314), processing (301), created (5), and approved (2).\n\nThe query counts every row in the orders table once per status, with no date filters or exclusions. Results were capped at 1,000 rows, which has no effect here since there are only 8 statuses.",
+      "latency_s": 3.35,
+      "repairs": 0,
+      "input_tokens": 3547,
+      "output_tokens": 189,
+      "cost_usd": 0.008984
+    },
+    {
+      "id": "e07",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "What is the average price of an order item?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  AVG(price) AS avg_item_price\nFROM order_items\nLIMIT 1000",
+      "answer": "The average price of an order item is 120.65. This comes from averaging the price column across every row in the order items table, so each item counts equally. The calculation assumes price is the item's listed price and does not include shipping, freight, or any discounts.",
+      "latency_s": 2.76,
+      "repairs": 0,
+      "input_tokens": 3444,
+      "output_tokens": 108,
+      "cost_usd": 0.007968
+    },
+    {
+      "id": "e08",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "How many products are in the health and beauty category?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(*) AS health_beauty_product_count\nFROM products\nWHERE\n  product_category = 'health_beauty'\nLIMIT 1000",
+      "answer": "There are 2,444 products in the health and beauty category.\n\nThis count assumes the category is identified by the exact label \"health_beauty\" in the products table, and it counts every product row with that label.",
+      "latency_s": 3.24,
+      "repairs": 0,
+      "input_tokens": 3475,
+      "output_tokens": 172,
+      "cost_usd": 0.00867
+    },
+    {
+      "id": "e09",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "What percentage of reviews have a score of 5?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  100.0 * COUNT(*) FILTER(WHERE\n    review_score = 5) / COUNT(*) AS pct_reviews_score_5\nFROM order_reviews\nWHERE\n  NOT review_score IS NULL\nLIMIT 1000",
+      "answer": "About 57.78% of reviews have a score of 5. This is calculated across all reviews in the order reviews table that have a score recorded, so any reviews with a missing score are left out of both the count and the total.",
+      "latency_s": 3.23,
+      "repairs": 0,
+      "input_tokens": 3515,
+      "output_tokens": 153,
+      "cost_usd": 0.00856
+    },
+    {
+      "id": "e10",
+      "difficulty": "easy",
+      "traps": [
+        "date_math"
+      ],
+      "question": "How many orders were placed in 2018?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(*) AS order_count\nFROM orders\nWHERE\n  order_purchase_timestamp >= CAST('2018-01-01' AS TIMESTAMP)\n  AND order_purchase_timestamp < CAST('2019-01-01' AS TIMESTAMP)\nLIMIT 1000",
+      "answer": "There were 54,011 orders placed in 2018. This counts every order in the orders table with a purchase timestamp from January 1, 2018 up to, but not including, January 1, 2019. It includes all orders regardless of status, so canceled or unavailable orders would be counted too.",
+      "latency_s": 3.26,
+      "repairs": 0,
+      "input_tokens": 3519,
+      "output_tokens": 184,
+      "cost_usd": 0.008878
+    },
+    {
+      "id": "e11",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Which 5 states have the most sellers?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  seller_state,\n  COUNT(DISTINCT seller_id) AS seller_count\nFROM sellers\nGROUP BY\n  seller_state\nORDER BY\n  seller_count DESC,\n  seller_state\nLIMIT 5",
+      "answer": "S\u00e3o Paulo (SP) has by far the most sellers with 1,849, followed by Paran\u00e1 (PR) with 349, Minas Gerais (MG) with 244, Santa Catarina (SC) with 190, and Rio de Janeiro (RJ) with 171. SP has more than five times as many sellers as the second-place state.\n\nThe query counted each unique seller once per state, based on the state listed in the sellers table. Ties would have been ordered alphabetically by state code, though none occurred here.",
+      "latency_s": 3.54,
+      "repairs": 0,
+      "input_tokens": 3544,
+      "output_tokens": 245,
+      "cost_usd": 0.009538
+    },
+    {
+      "id": "e12",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "What is the total freight value across all order items?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  SUM(freight_value) AS total_freight_value\nFROM order_items\nLIMIT 1000",
+      "answer": "The total freight value across all order items is 2,251,909.54. This comes from adding up the freight_value column for every row in the order_items table. The query assumes every order item should be counted, with no filtering by date, order status, or cancellations, and the result is in whatever currency the data is stored in.",
+      "latency_s": 2.6,
+      "repairs": 0,
+      "input_tokens": 3456,
+      "output_tokens": 128,
+      "cost_usd": 0.008192
+    },
+    {
+      "id": "m01",
+      "difficulty": "medium",
+      "traps": [
+        "payment_rows"
+      ],
+      "question": "How many orders were paid by each payment type?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  payment_type,\n  COUNT(DISTINCT order_id) AS order_count\nFROM order_payments\nGROUP BY\n  payment_type\nORDER BY\n  order_count DESC\nLIMIT 1000",
+      "answer": "Credit card was the most common payment type, covering 76,505 orders, followed by boleto with 19,784, voucher with 3,866, and debit card with 1,528. Only 3 orders were recorded with a payment type of \"not_defined.\"\n\nThe query counts each order once per payment type, so an order paid with more than one method (for example, a voucher plus a credit card) appears in each of those rows. Because of this, the counts may add up to more than the total number of unique orders.",
+      "latency_s": 3.77,
+      "repairs": 0,
+      "input_tokens": 3544,
+      "output_tokens": 255,
+      "cost_usd": 0.009638
+    },
+    {
+      "id": "m02",
+      "difficulty": "medium",
+      "traps": [
+        "customer_unique_id"
+      ],
+      "question": "Which 5 states have the most customers?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  customer_state,\n  COUNT(DISTINCT customer_unique_id) AS customer_count\nFROM customers\nGROUP BY\n  customer_state\nORDER BY\n  customer_count DESC\nLIMIT 5",
+      "answer": "S\u00e3o Paulo (SP) has the most customers by a wide margin with 40,302, followed by Rio de Janeiro (RJ) with 12,384, Minas Gerais (MG) with 11,259, Rio Grande do Sul (RS) with 5,277, and Paran\u00e1 (PR) with 4,882. SP alone has more than three times as many customers as the second-place state.\n\nThe query counts each customer once using their unique customer ID, so repeat buyers are not double counted. Each customer is assigned to the state listed in their customer record.",
+      "latency_s": 3.63,
+      "repairs": 0,
+      "input_tokens": 3541,
+      "output_tokens": 324,
+      "cost_usd": 0.010322
+    },
+    {
+      "id": "m03",
+      "difficulty": "medium",
+      "traps": [
+        "revenue"
+      ],
+      "question": "What are the top 5 product categories by revenue?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  p.product_category,\n  SUM(oi.price) AS total_revenue\nFROM order_items AS oi\nJOIN products AS p\n  ON oi.product_id = p.product_id\nGROUP BY\n  p.product_category\nORDER BY\n  total_revenue DESC\nLIMIT 5",
+      "answer": "Health and beauty is the top category by revenue at 1,258,681.34, followed closely by watches and gifts (1,205,005.68) and bed, bath and table (1,036,988.68). Sports and leisure (988,048.97) and computers and accessories (911,954.32) round out the top 5.\n\nRevenue here is the sum of item prices from order line items, so it likely excludes shipping costs and does not account for any cancelled or returned orders.",
+      "latency_s": 2.99,
+      "repairs": 0,
+      "input_tokens": 3612,
+      "output_tokens": 249,
+      "cost_usd": 0.009714
+    },
+    {
+      "id": "m04",
+      "difficulty": "medium",
+      "traps": [
+        "date_math"
+      ],
+      "question": "Which month had the highest number of orders?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  DATE_TRUNC('MONTH', order_purchase_timestamp) AS order_month,\n  COUNT(DISTINCT order_id) AS total_orders\nFROM orders\nWHERE\n  NOT order_purchase_timestamp IS NULL\nGROUP BY\n  DATE_TRUNC('MONTH', order_purchase_timestamp)\nORDER BY\n  total_orders DESC\nLIMIT 1",
+      "answer": "November 2017 had the highest number of orders, with 7,544 distinct orders placed that month.\n\nThis count is based on each order's purchase timestamp, and orders with no purchase date were left out. Each order was counted once, regardless of how many items it contained.",
+      "latency_s": 3.7,
+      "repairs": 0,
+      "input_tokens": 3585,
+      "output_tokens": 287,
+      "cost_usd": 0.01004
+    },
+    {
+      "id": "m05",
+      "difficulty": "medium",
+      "traps": [
+        "revenue",
+        "date_math"
+      ],
+      "question": "What was the total revenue in each year?",
+      "status": "wrong",
+      "reason": "no agent column matches gold column 2 (values differ)",
+      "sql": "SELECT\n  EXTRACT(YEAR FROM o.order_purchase_timestamp) AS order_year,\n  SUM(oi.price) AS total_revenue\nFROM orders AS o\nJOIN order_items AS oi\n  ON oi.order_id = o.order_id\nWHERE\n  NOT o.order_status IN ('canceled', 'unavailable')\nGROUP BY\n  order_year\nORDER BY\n  order_year\nLIMIT 1000",
+      "answer": "Total revenue was 44,726.06 in 2016, 6,108,492.27 in 2017, and 7,341,182.41 in 2018, so revenue grew each year, with 2018 the highest.\n\nRevenue here is the sum of item prices (excluding shipping or freight) on orders placed in each year. Orders with a status of canceled or unavailable were left out, but all other statuses were counted, including orders that may not have been delivered yet.",
+      "latency_s": 4.54,
+      "repairs": 0,
+      "input_tokens": 3609,
+      "output_tokens": 359,
+      "cost_usd": 0.010808
+    },
+    {
+      "id": "m06",
+      "difficulty": "medium",
+      "traps": [
+        "revenue"
+      ],
+      "question": "Which 10 sellers have the highest revenue?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  s.seller_id,\n  s.seller_city,\n  s.seller_state,\n  SUM(oi.price) AS total_revenue\nFROM order_items AS oi\nJOIN sellers AS s\n  ON s.seller_id = oi.seller_id\nGROUP BY\n  s.seller_id,\n  s.seller_city,\n  s.seller_state\nORDER BY\n  total_revenue DESC\nLIMIT 10",
+      "answer": "The top seller is 4869f7a5dfa277a7dca6462dcf3b52b2 in Guariba, SP, with 229,472.63 in revenue, followed closely by 53243585a1d6dc2643021fd1853d8905 in Lauro de Freitas, BA, at 222,776.05. Nine of the top 10 sellers are in S\u00e3o Paulo state (SP), and the 10th place seller reached 135,171.70.\n\nRevenue here is the sum of item prices for each seller across all order items. It does not include freight, and it does not filter out canceled or unfulfilled orders, so the figures may be somewhat higher than revenue from completed sales.",
+      "latency_s": 4.57,
+      "repairs": 0,
+      "input_tokens": 4015,
+      "output_tokens": 358,
+      "cost_usd": 0.01161
+    },
+    {
+      "id": "m07",
+      "difficulty": "medium",
+      "traps": [
+        "fanout"
+      ],
+      "question": "What is the average number of items per order?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "WITH items_per_order AS (\n  SELECT\n    order_id,\n    COUNT(*) AS item_count\n  FROM order_items\n  GROUP BY\n    order_id\n)\nSELECT\n  AVG(item_count) AS avg_items_per_order\nFROM items_per_order\nLIMIT 1000",
+      "answer": "The average order contains about 1.14 items, so most orders are for a single item and only a small share include more than one.\n\nThis was calculated by counting the rows in the order_items table for each order, then averaging those counts. That means each line in the table counts as one item, regardless of any quantity value. Only orders that have at least one row in order_items are included.",
+      "latency_s": 3.04,
+      "repairs": 0,
+      "input_tokens": 3514,
+      "output_tokens": 199,
+      "cost_usd": 0.009018
+    },
+    {
+      "id": "m08",
+      "difficulty": "medium",
+      "traps": [
+        "revenue",
+        "fanout"
+      ],
+      "question": "What is the average order value?",
+      "status": "wrong",
+      "reason": "no agent column matches gold column 1 (values differ)",
+      "sql": "WITH order_totals AS (\n  SELECT\n    order_id,\n    SUM(payment_value) AS order_value\n  FROM order_payments\n  GROUP BY\n    order_id\n)\nSELECT\n  AVG(order_value) AS average_order_value\nFROM order_totals\nLIMIT 1000",
+      "answer": "The average order value is 160.99. This was calculated by adding up all payment amounts for each order, then averaging those order totals across all orders.\n\nThe query assumes that an order's value equals the sum of its payments, so it reflects what customers paid rather than the list price of items. If an order was paid in several installments or with multiple methods, those payments were combined into one order total.",
+      "latency_s": 3.85,
+      "repairs": 0,
+      "input_tokens": 3503,
+      "output_tokens": 262,
+      "cost_usd": 0.009626
+    },
+    {
+      "id": "m09",
+      "difficulty": "medium",
+      "traps": [
+        "fanout"
+      ],
+      "question": "Which 5 product categories appear in the most orders?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  p.product_category,\n  COUNT(DISTINCT oi.order_id) AS order_count\nFROM order_items AS oi\nJOIN products AS p\n  ON oi.product_id = p.product_id\nWHERE\n  NOT p.product_category IS NULL\nGROUP BY\n  p.product_category\nORDER BY\n  order_count DESC\nLIMIT 5",
+      "answer": "The top 5 categories by number of orders are bed_bath_table (9,417 orders), health_beauty (8,836), sports_leisure (7,720), computers_accessories (6,689), and furniture_decor (6,449). Bed_bath_table leads health_beauty by 581 orders.\n\nEach order is counted once per category, even if it contained several items from that category. An order with items from multiple categories counts toward each of them, so these counts can't be added together to get a total number of orders. Products with no category were excluded.",
+      "latency_s": 3.73,
+      "repairs": 0,
+      "input_tokens": 3615,
+      "output_tokens": 291,
+      "cost_usd": 0.01014
+    },
+    {
+      "id": "m10",
+      "difficulty": "medium",
+      "traps": [],
+      "question": "What is the average number of installments for credit card payments?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  AVG(payment_installments) AS avg_installments\nFROM order_payments\nWHERE\n  payment_type = 'credit_card'\nLIMIT 1000",
+      "answer": "On average, credit card payments are split into about 3.51 installments. The calculation looks only at payments where the payment type is \"credit_card\" and averages the installment count across all of those payment records. Each payment record is treated equally, so this is an average per payment, not per order or per customer.",
+      "latency_s": 2.19,
+      "repairs": 0,
+      "input_tokens": 3476,
+      "output_tokens": 141,
+      "cost_usd": 0.008362
+    },
+    {
+      "id": "m11",
+      "difficulty": "medium",
+      "traps": [
+        "customer_unique_id"
+      ],
+      "question": "How many customers placed more than one order?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "WITH customer_orders AS (\n  SELECT\n    c.customer_unique_id,\n    COUNT(DISTINCT o.order_id) AS order_count\n  FROM orders AS o\n  JOIN customers AS c\n    ON o.customer_id = c.customer_id\n  GROUP BY\n    c.customer_unique_id\n)\nSELECT\n  COUNT(*) AS repeat_customers\nFROM customer_orders\nWHERE\n  order_count > 1\nLIMIT 1000",
+      "answer": "A total of 2,997 customers placed more than one order.\n\nThe query counted customers by their unique customer ID (not the per-order customer ID), so someone who ordered under different customer records is still treated as one person. It also counted every order in the orders table regardless of status, so canceled or unfulfilled orders are included.",
+      "latency_s": 3.75,
+      "repairs": 0,
+      "input_tokens": 3574,
+      "output_tokens": 315,
+      "cost_usd": 0.010298
+    },
+    {
+      "id": "m12",
+      "difficulty": "medium",
+      "traps": [
+        "customer_unique_id"
+      ],
+      "question": "Which 5 cities have the most customers?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  customer_city,\n  COUNT(DISTINCT customer_unique_id) AS customer_count\nFROM customers\nGROUP BY\n  customer_city\nORDER BY\n  customer_count DESC\nLIMIT 5",
+      "answer": "S\u00e3o Paulo has the most customers by a wide margin with 14,984, followed by Rio de Janeiro (6,620), Belo Horizonte (2,672), Bras\u00edlia (2,069), and Curitiba (1,465). S\u00e3o Paulo has more than twice as many customers as the second-place city.\n\nThe query counts unique customers per city using their unique customer ID, so someone who placed multiple orders is counted once. It also groups by city name alone, so cities with the same name in different states would be combined.",
+      "latency_s": 3.73,
+      "repairs": 0,
+      "input_tokens": 3557,
+      "output_tokens": 278,
+      "cost_usd": 0.009894
+    },
+    {
+      "id": "m13",
+      "difficulty": "medium",
+      "traps": [
+        "revenue"
+      ],
+      "question": "Which 5 customer states generated the most revenue?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  c.customer_state,\n  SUM(oi.price) AS total_revenue\nFROM order_items AS oi\nJOIN orders AS o\n  ON oi.order_id = o.order_id\nJOIN customers AS c\n  ON o.customer_id = c.customer_id\nGROUP BY\n  c.customer_state\nORDER BY\n  total_revenue DESC\nLIMIT 5",
+      "answer": "S\u00e3o Paulo (SP) generated the most revenue at 5,202,955.05, followed by Rio de Janeiro (RJ) at 1,824,092.67, Minas Gerais (MG) at 1,585,308.03, Rio Grande do Sul (RS) at 750,304.02, and Paran\u00e1 (PR) at 683,083.76. SP alone brings in more than the next two states combined.\n\nRevenue here is the sum of item prices, so it excludes shipping costs and does not filter by order status. Canceled or unfulfilled orders would therefore still be counted.",
+      "latency_s": 4.09,
+      "repairs": 0,
+      "input_tokens": 3625,
+      "output_tokens": 358,
+      "cost_usd": 0.01083
+    },
+    {
+      "id": "m14",
+      "difficulty": "medium",
+      "traps": [
+        "late_delivery"
+      ],
+      "question": "How many orders were delivered late?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(*) AS late_delivered_orders\nFROM orders\nWHERE\n  order_status = 'delivered'\n  AND NOT order_delivered_customer_date IS NULL\n  AND order_delivered_customer_date > order_estimated_delivery_date\nLIMIT 1000",
+      "answer": "A total of 7,826 orders were delivered late.\n\nThe query counted an order as late when its status is \"delivered,\" it has an actual delivery date recorded, and that date came after the estimated delivery date. Orders that were never delivered or have no recorded delivery date are not included in this count.",
+      "latency_s": 3.25,
+      "repairs": 0,
+      "input_tokens": 3513,
+      "output_tokens": 188,
+      "cost_usd": 0.008906
+    },
+    {
+      "id": "m15",
+      "difficulty": "medium",
+      "traps": [
+        "payment_rows",
+        "comparison"
+      ],
+      "question": "What is the average total payment per order for credit card versus boleto?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "WITH order_type_totals AS (\n  SELECT\n    order_id,\n    payment_type,\n    SUM(payment_value) AS order_total_payment\n  FROM order_payments\n  WHERE\n    payment_type IN ('credit_card', 'boleto')\n  GROUP BY\n    order_id,\n    payment_type\n)\nSELECT\n  payment_type,\n  COUNT(*) AS order_count,\n  AVG(order_total_payment) AS avg_total_payment_per_order\nFROM order_type_totals\nGROUP BY\n  payment_type\nORDER BY\n  payment_type\nLIMIT 1000",
+      "answer": "Credit card orders average 163.94 in total payment per order, compared with 145.03 for boleto, a difference of about 18.91. This is based on 76,505 credit card orders and 19,784 boleto orders.\n\nThe query adds up all payments of each type within an order (for example, when a credit card order is split across several installments or payment lines) before averaging. Orders that used both methods are counted in each group, but only with the amount paid by that specific method. Currency units are as stored in the data.",
+      "latency_s": 4.7,
+      "repairs": 0,
+      "input_tokens": 3685,
+      "output_tokens": 389,
+      "cost_usd": 0.01126
+    },
+    {
+      "id": "m16",
+      "difficulty": "medium",
+      "traps": [
+        "date_math"
+      ],
+      "question": "How many orders were placed each month in 2017?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  DATE_TRUNC('MONTH', order_purchase_timestamp) AS order_month,\n  COUNT(DISTINCT order_id) AS order_count\nFROM orders\nWHERE\n  order_purchase_timestamp >= CAST('2017-01-01' AS TIMESTAMP)\n  AND order_purchase_timestamp < CAST('2018-01-01' AS TIMESTAMP)\nGROUP BY\n  DATE_TRUNC('MONTH', order_purchase_timestamp)\nORDER BY\n  order_month\nLIMIT 1000",
+      "answer": "Orders grew from 800 in January 2017 to 5,673 in December, with a peak of 7,544 in November. Growth was mostly steady, with small dips in April (2,404) and June (3,245), and then a sharp jump in November before easing in December. The query counts distinct orders by their purchase date, so every order is counted once regardless of its status (including canceled ones).",
+      "latency_s": 5.02,
+      "repairs": 0,
+      "input_tokens": 3844,
+      "output_tokens": 296,
+      "cost_usd": 0.010648
+    },
+    {
+      "id": "h01",
+      "difficulty": "hard",
+      "traps": [
+        "date_math"
+      ],
+      "question": "What is the average delivery time in days by state?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  c.customer_state,\n  AVG(\n    DATE_DIFF('SECOND', o.order_purchase_timestamp, o.order_delivered_customer_date) / 86400.0\n  ) AS avg_delivery_days,\n  COUNT(*) AS delivered_orders\nFROM orders AS o\nJOIN customers AS c\n  ON o.customer_id = c.customer_id\nWHERE\n  NOT o.order_delivered_customer_date IS NULL\n  AND NOT o.order_purchase_timestamp IS NULL\n  AND o.order_status = 'delivered'\nGROUP BY\n  c.customer_state\nORDER BY\n  avg_delivery_days DESC\nLIMIT 1000",
+      "answer": "Delivery times vary widely by state. Roraima (RR) is slowest at 29.39 days on average, followed by Amap\u00e1 (AP) at 27.19 and Amazonas (AM) at 26.43. S\u00e3o Paulo (SP) is fastest at 8.76 days, with Paran\u00e1 (PR) at 11.99 and Minas Gerais (MG) at 12.01 next.\n\nThe calculation measures the time from purchase to delivery to the customer, and only includes orders with a status of \"delivered\" and with both dates present. Some of the slowest states have few orders (RR has 41, AP has 67), so their averages rest on small samples, while SP's average is based on 40,494 orders.",
+      "latency_s": 4.48,
+      "repairs": 0,
+      "input_tokens": 4070,
+      "output_tokens": 443,
+      "cost_usd": 0.01257
+    },
+    {
+      "id": "h02",
+      "difficulty": "hard",
+      "traps": [
+        "late_delivery",
+        "comparison"
+      ],
+      "question": "Do late deliveries get worse reviews?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "WITH order_review AS (\n  SELECT\n    o.order_id,\n    CASE\n      WHEN o.order_delivered_customer_date > o.order_estimated_delivery_date\n      THEN 'late'\n      ELSE 'on_time'\n    END AS delivery_status,\n    AVG(r.review_score) AS order_review_score\n  FROM orders AS o\n  JOIN order_reviews AS r\n    ON r.order_id = o.order_id\n  WHERE\n    o.order_status = 'delivered'\n    AND NOT o.order_delivered_customer_date IS NULL\n    AND NOT o.order_estimated_delivery_date IS NULL\n  GROUP BY\n    o.order_id,\n    delivery_status\n)\nSELECT\n  delivery_status,\n  COUNT(*) AS order_count,\n  ROUND(AVG(order_review_score), 3) AS avg_review_score,\n  ROUND(100.0 * SUM(CASE WHEN order_review_score <= 2 THEN 1 ELSE 0 END) / COUNT(*), 2) AS pct_low_reviews,\n  ROUND(100.0 * SUM(CASE WHEN order_review_score >= 4 THEN 1 ELSE 0 END) / COUNT(*), 2) AS pct_high_reviews\nFROM order_review\nGROUP BY\n  delivery_status\nORDER BY\n  delivery_status\nLIMIT 1000",
+      "answer": "Yes, late deliveries get much worse reviews. Late orders average 2.57 out of 5, compared with 4.29 for on-time orders. About 54% of late orders received a low score (2 or below) versus 9% of on-time orders, and only 35% of late orders got a high score (4 or above) versus 83% of on-time orders.\n\nAssumptions in the analysis: only delivered orders with both a delivery date and an estimated date were included, and \"late\" means delivered after the estimated date. When an order had multiple reviews, their scores were averaged into one score per order. The comparison covers 7,661 late orders and 88,163 on-time orders.",
+      "latency_s": 4.88,
+      "repairs": 0,
+      "input_tokens": 3995,
+      "output_tokens": 675,
+      "cost_usd": 0.01474
+    },
+    {
+      "id": "h03",
+      "difficulty": "hard",
+      "traps": [
+        "late_delivery"
+      ],
+      "question": "What percentage of delivered orders arrived late?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(*) AS delivered_orders,\n  SUM(\n    CASE\n      WHEN order_delivered_customer_date > order_estimated_delivery_date\n      THEN 1\n      ELSE 0\n    END\n  ) AS late_orders,\n  100.0 * SUM(\n    CASE\n      WHEN order_delivered_customer_date > order_estimated_delivery_date\n      THEN 1\n      ELSE 0\n    END\n  ) / COUNT(*) AS late_percentage\nFROM orders\nWHERE\n  order_status = 'delivered'\n  AND NOT order_delivered_customer_date IS NULL\n  AND NOT order_estimated_delivery_date IS NULL\nLIMIT 1000",
+      "answer": "About 8.11% of delivered orders arrived late. Out of 96,470 delivered orders, 7,826 were delivered after their estimated delivery date.\n\nThe query counted an order as late only if its actual delivery date was later than the estimated date. It left out delivered orders that were missing either date.",
+      "latency_s": 3.03,
+      "repairs": 0,
+      "input_tokens": 3696,
+      "output_tokens": 318,
+      "cost_usd": 0.010572
+    },
+    {
+      "id": "h04",
+      "difficulty": "hard",
+      "traps": [
+        "late_delivery",
+        "comparison"
+      ],
+      "question": "Which 5 customer states have the highest percentage of late deliveries, among states with at least 500 delivered orders?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  c.customer_state,\n  COUNT(*) AS delivered_orders,\n  SUM(\n    CASE\n      WHEN o.order_delivered_customer_date > o.order_estimated_delivery_date\n      THEN 1\n      ELSE 0\n    END\n  ) AS late_orders,\n  100.0 * SUM(\n    CASE\n      WHEN o.order_delivered_customer_date > o.order_estimated_delivery_date\n      THEN 1\n      ELSE 0\n    END\n  ) / COUNT(*) AS late_delivery_pct\nFROM orders AS o\nJOIN customers AS c\n  ON o.customer_id = c.customer_id\nWHERE\n  o.order_status = 'delivered'\n  AND NOT o.order_delivered_customer_date IS NULL\n  AND NOT o.order_estimated_delivery_date IS NULL\nGROUP BY\n  c.customer_state\nHAVING\n  COUNT(*) >= 500\nORDER BY\n  late_delivery_pct DESC\nLIMIT 5",
+      "answer": "Maranh\u00e3o (MA) has the highest late delivery rate at 19.67% (141 of 717 delivered orders). It is followed by Cear\u00e1 (CE) at 15.32%, Bahia (BA) at 14.04%, Rio de Janeiro (RJ) at 13.47%, and Par\u00e1 (PA) at 12.37%.\n\nAn order counted as late when its actual delivery date was after the estimated delivery date. Only orders with a \"delivered\" status and both dates present were included, and states with fewer than 500 such orders were excluded.",
+      "latency_s": 4.4,
+      "repairs": 0,
+      "input_tokens": 3937,
+      "output_tokens": 504,
+      "cost_usd": 0.012914
+    },
+    {
+      "id": "h05",
+      "difficulty": "hard",
+      "traps": [
+        "date_math"
+      ],
+      "question": "For each month from January to August 2018, how many orders were placed and what was the percentage change from the previous month?",
+      "status": "wrong",
+      "reason": "no agent column matches gold column 3 (values differ)",
+      "sql": "WITH monthly AS (\n  SELECT\n    DATE_TRUNC('MONTH', order_purchase_timestamp) AS order_month,\n    COUNT(DISTINCT order_id) AS order_count\n  FROM orders\n  WHERE\n    order_purchase_timestamp >= CAST('2018-01-01' AS TIMESTAMP)\n    AND order_purchase_timestamp < CAST('2018-09-01' AS TIMESTAMP)\n  GROUP BY\n    DATE_TRUNC('MONTH', order_purchase_timestamp)\n)\nSELECT\n  STRFTIME(order_month, '%Y-%m') AS order_month,\n  order_count,\n  LAG(order_count) OVER (ORDER BY order_month) AS previous_month_count,\n  ROUND(\n    100.0 * (\n      order_count - LAG(order_count) OVER (ORDER BY order_month)\n    ) / NULLIF(LAG(order_count) OVER (ORDER BY order_month), 0),\n    2\n  ) AS pct_change_from_previous_month\nFROM monthly\nORDER BY\n  monthly.order_month\nLIMIT 1000",
+      "answer": "Orders went from 7,269 in January 2018 to 6,512 in August 2018, with month-to-month swings along the way. The biggest drop was in June (6,167 orders, down 10.27% from May), and the biggest gain was in March (7,211 orders, up 7.18% from February). Orders have risen for the last two months, up 2.03% in July and 3.50% in August.\n\nJanuary has no percentage change because there is no December 2017 data in this comparison. The query counts distinct order IDs by purchase date, so every order is counted regardless of its status.",
+      "latency_s": 5.08,
+      "repairs": 0,
+      "input_tokens": 4069,
+      "output_tokens": 547,
+      "cost_usd": 0.013608
+    },
+    {
+      "id": "h06",
+      "difficulty": "hard",
+      "traps": [
+        "customer_unique_id"
+      ],
+      "question": "What percentage of customers have placed more than one order?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "WITH customer_orders AS (\n  SELECT\n    c.customer_unique_id,\n    COUNT(DISTINCT o.order_id) AS order_count\n  FROM customers AS c\n  JOIN orders AS o\n    ON o.customer_id = c.customer_id\n  GROUP BY\n    c.customer_unique_id\n)\nSELECT\n  100.0 * COUNT(*) FILTER(WHERE\n    order_count > 1) / COUNT(*) AS pct_customers_repeat,\n  COUNT(*) FILTER(WHERE\n    order_count > 1) AS repeat_customers,\n  COUNT(*) AS total_customers\nFROM customer_orders\nLIMIT 1000",
+      "answer": "About 3.12% of customers have placed more than one order. That is 2,997 repeat customers out of 96,096 total customers.\n\nThe query counts a customer as one person using their unique customer ID, rather than the ID attached to each order. Only customers who have at least one order are included.",
+      "latency_s": 4.38,
+      "repairs": 0,
+      "input_tokens": 3691,
+      "output_tokens": 382,
+      "cost_usd": 0.011202
+    },
+    {
+      "id": "h07",
+      "difficulty": "hard",
+      "traps": [
+        "comparison",
+        "fanout"
+      ],
+      "question": "Do orders with more than one item get different review scores than single-item orders?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "WITH item_counts AS (\n  SELECT\n    order_id,\n    COUNT(*) AS item_count\n  FROM order_items\n  GROUP BY\n    order_id\n), order_review AS (\n  SELECT\n    order_id,\n    AVG(review_score) AS avg_review_score\n  FROM order_reviews\n  GROUP BY\n    order_id\n)\nSELECT\n  CASE WHEN ic.item_count > 1 THEN 'multi_item' ELSE 'single_item' END AS order_type,\n  COUNT(*) AS num_orders,\n  AVG(r.avg_review_score) AS avg_review_score,\n  MEDIAN(r.avg_review_score) AS median_review_score,\n  AVG(CASE WHEN r.avg_review_score <= 2 THEN 1.0 ELSE 0.0 END) AS share_low_scores,\n  AVG(CASE WHEN r.avg_review_score >= 4 THEN 1.0 ELSE 0.0 END) AS share_high_scores\nFROM item_counts AS ic\nJOIN order_review AS r\n  ON r.order_id = ic.order_id\nGROUP BY\n  CASE WHEN ic.item_count > 1 THEN 'multi_item' ELSE 'single_item' END\nORDER BY\n  order_type\nLIMIT 1000",
+      "answer": "Yes, multi-item orders get noticeably lower reviews. Their average score is 3.60 (median 4.00) versus 4.16 (median 5.00) for single-item orders. About 28% of multi-item orders scored 2 or below, compared with 13% of single-item orders, and 63% scored 4 or higher versus 79%.\n\nThe comparison covers 9,690 multi-item orders and 88,227 single-item orders, so the multi-item group is much smaller. Only orders with at least one review are included, and if an order had several reviews, they were averaged into one score. \"Low\" means a score of 2 or less and \"high\" means 4 or more. The data shows the difference but not why it happens.",
+      "latency_s": 5.57,
+      "repairs": 0,
+      "input_tokens": 3993,
+      "output_tokens": 653,
+      "cost_usd": 0.014516
+    },
+    {
+      "id": "h08",
+      "difficulty": "hard",
+      "traps": [
+        "revenue",
+        "date_math"
+      ],
+      "question": "What are the top 5 product categories by revenue in 2018, and what percentage of total 2018 revenue does each represent?",
+      "status": "wrong",
+      "reason": "no agent column matches gold column 2 (values differ)",
+      "sql": "WITH cat_revenue AS (\n  SELECT\n    p.product_category,\n    SUM(oi.price) AS category_revenue\n  FROM orders AS o\n  JOIN order_items AS oi\n    ON oi.order_id = o.order_id\n  JOIN products AS p\n    ON p.product_id = oi.product_id\n  WHERE\n    o.order_purchase_timestamp >= CAST('2018-01-01' AS TIMESTAMP)\n    AND o.order_purchase_timestamp < CAST('2019-01-01' AS TIMESTAMP)\n    AND o.order_status <> 'canceled'\n  GROUP BY\n    p.product_category\n), total AS (\n  SELECT\n    SUM(category_revenue) AS total_revenue\n  FROM cat_revenue\n)\nSELECT\n  c.product_category,\n  c.category_revenue,\n  ROUND(100.0 * c.category_revenue / t.total_revenue, 2) AS pct_of_total_revenue\nFROM cat_revenue AS c\nCROSS JOIN total AS t\nORDER BY\n  c.category_revenue DESC\nLIMIT 5",
+      "answer": "In 2018, the top 5 product categories by revenue were health_beauty (770,002.81, 10.49% of total), watches_gifts (708,305.95, 9.65%), bed_bath_table (537,514.13, 7.32%), sports_leisure (530,182.18, 7.22%), and computers_accessories (502,432.09, 6.84%). Together these five make up roughly 41.5% of 2018 revenue.\n\nRevenue here is the sum of item prices (excluding shipping or freight) for orders placed in 2018, with canceled orders left out. The percentages are measured against all non-canceled 2018 revenue across every category, not just these five.",
+      "latency_s": 5.19,
+      "repairs": 0,
+      "input_tokens": 3980,
+      "output_tokens": 578,
+      "cost_usd": 0.01374
+    },
+    {
+      "id": "h09",
+      "difficulty": "hard",
+      "traps": [
+        "customer_unique_id",
+        "date_math"
+      ],
+      "question": "For customers with at least two orders, what is the average number of days between their first and second order?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "WITH ranked AS (\n  SELECT\n    c.customer_unique_id,\n    o.order_purchase_timestamp,\n    ROW_NUMBER() OVER (PARTITION BY c.customer_unique_id ORDER BY o.order_purchase_timestamp, o.order_id) AS order_rank\n  FROM orders AS o\n  JOIN customers AS c\n    ON o.customer_id = c.customer_id\n), first_second AS (\n  SELECT\n    customer_unique_id,\n    MIN(CASE WHEN order_rank = 1 THEN order_purchase_timestamp END) AS first_order_ts,\n    MIN(CASE WHEN order_rank = 2 THEN order_purchase_timestamp END) AS second_order_ts\n  FROM ranked\n  WHERE\n    order_rank <= 2\n  GROUP BY\n    customer_unique_id\n  HAVING\n    COUNT(*) = 2\n)\nSELECT\n  COUNT(*) AS customers_with_two_or_more_orders,\n  AVG(DATE_DIFF('SECOND', first_order_ts, second_order_ts) / 86400.0) AS avg_days_between_first_and_second_order\nFROM first_second\nLIMIT 1000",
+      "answer": "Among the 2,997 customers who placed at least two orders, the average gap between their first and second order is about 80.35 days.\n\nThe SQL identified customers by their unique customer ID (not the per-order customer ID) and ranked their orders by purchase timestamp, using order ID to break ties. It measured the gap in seconds and converted it to days, so partial days are included. Only the first two orders per customer were used, so later orders do not affect the average.",
+      "latency_s": 5.44,
+      "repairs": 0,
+      "input_tokens": 3895,
+      "output_tokens": 646,
+      "cost_usd": 0.01425
+    },
+    {
+      "id": "h10",
+      "difficulty": "hard",
+      "traps": [
+        "fanout",
+        "comparison"
+      ],
+      "question": "Which 5 product categories have the lowest average review score, among categories with at least 500 reviews?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "WITH order_categories AS (\n  SELECT DISTINCT\n    oi.order_id,\n    p.product_category\n  FROM order_items AS oi\n  JOIN products AS p\n    ON p.product_id = oi.product_id\n  WHERE\n    NOT p.product_category IS NULL\n)\nSELECT\n  oc.product_category,\n  AVG(r.review_score) AS avg_review_score,\n  COUNT(DISTINCT r.review_id) AS review_count\nFROM order_categories AS oc\nJOIN order_reviews AS r\n  ON r.order_id = oc.order_id\nGROUP BY\n  oc.product_category\nHAVING\n  COUNT(DISTINCT r.review_id) >= 500\nORDER BY\n  avg_review_score ASC\nLIMIT 5",
+      "answer": "Office furniture has the lowest average review score at 3.62 (from 1,265 reviews), followed by bed_bath_table at 3.97, telephony at 4.00, furniture_decor at 4.01, and computers_accessories at 4.03. Office furniture stands out as noticeably lower than the rest, which are all clustered close to 4.0.\n\nAssumptions in the SQL: each order was counted once per category it contained, and its reviews were attributed to every category in that order. Products with no category were excluded, and only categories with at least 500 distinct reviews were considered.",
+      "latency_s": 4.99,
+      "repairs": 0,
+      "input_tokens": 3820,
+      "output_tokens": 523,
+      "cost_usd": 0.01287
+    },
+    {
+      "id": "h11",
+      "difficulty": "hard",
+      "traps": [
+        "revenue",
+        "date_math",
+        "comparison"
+      ],
+      "question": "By what percentage did revenue grow in Q1 2018 compared with Q1 2017?",
+      "status": "wrong",
+      "reason": "no agent column matches gold column 1 (values differ)",
+      "sql": "WITH q AS (\n  SELECT\n    SUM(\n      CASE\n        WHEN o.order_purchase_timestamp >= CAST('2017-01-01' AS TIMESTAMP)\n        AND o.order_purchase_timestamp < CAST('2017-04-01' AS TIMESTAMP)\n        THEN oi.price + oi.freight_value\n        ELSE 0\n      END\n    ) AS revenue_q1_2017,\n    SUM(\n      CASE\n        WHEN o.order_purchase_timestamp >= CAST('2018-01-01' AS TIMESTAMP)\n        AND o.order_purchase_timestamp < CAST('2018-04-01' AS TIMESTAMP)\n        THEN oi.price + oi.freight_value\n        ELSE 0\n      END\n    ) AS revenue_q1_2018\n  FROM orders AS o\n  JOIN order_items AS oi\n    ON oi.order_id = o.order_id\n  WHERE\n    NOT o.order_status IN ('canceled', 'unavailable')\n)\nSELECT\n  revenue_q1_2017,\n  revenue_q1_2018,\n  (\n    revenue_q1_2018 - revenue_q1_2017\n  ) * 100.0 / revenue_q1_2017 AS revenue_growth_pct\nFROM q\nLIMIT 1000",
+      "answer": "Revenue grew by 282.22% from Q1 2017 to Q1 2018, rising from 846,123.11 to 3,234,063.16. Revenue here is item price plus freight, summed across all orders placed in each quarter. Canceled and unavailable orders were excluded, but orders in any other status were counted.",
+      "latency_s": 5.61,
+      "repairs": 0,
+      "input_tokens": 3955,
+      "output_tokens": 631,
+      "cost_usd": 0.01422
+    },
+    {
+      "id": "h12",
+      "difficulty": "hard",
+      "traps": [
+        "revenue"
+      ],
+      "question": "What percentage of total revenue comes from the top 100 sellers by revenue?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "WITH seller_revenue AS (\n  SELECT\n    seller_id,\n    SUM(price) AS seller_total_revenue\n  FROM order_items\n  GROUP BY\n    seller_id\n), ranked AS (\n  SELECT\n    seller_id,\n    seller_total_revenue,\n    ROW_NUMBER() OVER (ORDER BY seller_total_revenue DESC) AS revenue_rank\n  FROM seller_revenue\n)\nSELECT\n  SUM(CASE WHEN revenue_rank <= 100 THEN seller_total_revenue ELSE 0 END) AS top_100_revenue,\n  SUM(seller_total_revenue) AS total_revenue,\n  100.0 * SUM(CASE WHEN revenue_rank <= 100 THEN seller_total_revenue ELSE 0 END) / SUM(seller_total_revenue) AS top_100_revenue_pct\nFROM ranked\nLIMIT 1000",
+      "answer": "The top 100 sellers by revenue account for about 45.06% of total revenue: roughly 6,124,587.58 out of 13,591,643.70 overall.\n\nThis assumes revenue is the sum of item prices in the order items table, so it excludes things like shipping or freight charges. Sellers are ranked by their total item revenue across all orders in the data.",
+      "latency_s": 4.36,
+      "repairs": 0,
+      "input_tokens": 3810,
+      "output_tokens": 439,
+      "cost_usd": 0.01201
+    }
+  ]
+}

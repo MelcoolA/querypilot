@@ -11,3 +11,9 @@ never replaced or edited; new ones may only be added and listed below.
   (`python -m evals.run_evals --baseline`), same model, no Phase 2 fixes.
   Score: 14/40 (35%). Summary in `summary.md`, per-question SQL and answers
   in `results.json`.
+- `2026-10-02_181603_anthropic-claude-sonnet-5-5_claude-phase1/`: the Phase 1
+  agent (commit d5f75b7, no semantic layer) with `claude-sonnet-5-5`, effort
+  medium. Run in a separate checkout with only the Claude client updated
+  (current models reject `temperature`), the current scorer, and the current
+  gold set (h12 reworded), so it is comparable with the Claude final run.
+  Score: 35/40 (88%).

@@ -10,6 +10,8 @@ One entry per change to the agent, with the eval score after it. Dataset: Olist
 | 3 | Repair loop: attempt history, stop on repeat (h12 reworded) | qwen2.5-coder:7b | 30/40 (75%) | 12/12 | 12/16 | 6/12 | +1 is from rewording h12, not the fix; 2 gave up, 40.9s avg |
 | 4 | Comparison rule in write_sql; summarize warns on row limit | qwen2.5-coder:7b | 29/40 (72%) | 12/12 | 11/16 | 6/12 | -1 is within noise (see entry); answers clearly better; 4 gave up |
 | 5 | Few-shot examples in write_sql (6 patterns, none from gold) | qwen2.5-coder:7b | 29/40 (72%) | 12/12 | 13/16 | 4/12 | medium best yet, hard down (over-imitation); 3 gave up |
+| 6 | Claude baseline: Phase 1 agent, no semantic layer | claude-sonnet-5-5 | 35/40 (88%) | 12/12 | 14/16 | 9/12 | 0 gave up, 3.9s avg, $0.011/question |
+| 7 | Claude final: all fixes | claude-sonnet-5-5 | **40/40 (100%)** | 12/12 | 16/16 | 12/12 | 0 gave up, 3.6s avg, $0.017/question |
 
 ## 0. Gold set created
 
@@ -217,3 +219,52 @@ Takeaway: with qwen2.5-coder:7b, prompting has plateaued at about 29 to 30
 of 40. Fixes 2 to 4 each moved several questions in both directions without
 changing the total. The remaining failures are logic the model gets wrong
 even with the rule, a definition, and an example in front of it.
+
+## 6 and 7. Claude comparison: 35/40 -> 40/40
+
+Same 40 questions, same scorer, `claude-sonnet-5-5` at effort `medium`.
+- Final: the current agent (all four fixes).
+  `results/2026-10-02_181336_anthropic-claude-sonnet-5-5_claude-final/`
+- Baseline: the Phase 1 agent (commit d5f75b7, no semantic layer), run in a
+  separate checkout with only the Claude client updated (current models
+  reject `temperature` and always think first), the current scorer, and
+  the current gold set. `results/baseline/2026-10-02_181603_anthropic-claude-sonnet-5-5_claude-phase1/`
+
+| | qwen2.5-coder:7b baseline | qwen2.5-coder:7b final | Claude Sonnet 5.5 baseline | Claude Sonnet 5.5 final |
+|---|---|---|---|---|
+| **Overall** | 14/40 (35%) | 29/40 (72%) | 35/40 (88%) | **40/40 (100%)** |
+| Easy | 10/12 | 12/12 | 12/12 | 12/12 |
+| Medium | 3/16 | 13/16 | 14/16 | 16/16 |
+| Hard | 1/12 | 4/12 | 9/12 | 12/12 |
+| Gave up | 4 | 3 | 0 | 0 |
+| Repairs | 14 | 6 | 0 | 0 |
+| Avg tokens in / out | 4,117 / 175 | 5,880 / 137 | 3,662 / 316 | 7,069 / 264 |
+| Avg latency | 43.2s | 17.6s | 3.9s | 3.6s |
+| Cost per question | $0 | $0 | $0.011 | $0.017 |
+| Cost per 1,000 questions | $0 | $0 | ~$11 | ~$17 |
+
+(qwen latency varied 2x between runs with no code cause, from laptop load,
+so treat it as rough. Claude's output tokens include thinking.)
+
+What Claude's 5 baseline failures were (all checked against gold):
+- 4 are reasonable business choices that differ from our definitions, and
+  Claude stated each choice in its answer: excluding canceled orders from
+  revenue (m05, h08), order value as total payments (m08), revenue including
+  freight (h11).
+- 1 is a real logic error (h05): filtered to 2018 before computing the
+  month-over-month change, so January's change is missing. qwen made the
+  identical mistake.
+
+Takeaways:
+- **The semantic layer does different work for each model.** For qwen-7b it
+  fixes broken logic (`price * freight_value`, `customer_id` as a person). For
+  Claude it aligns sensible choices with the business's definitions: without
+  it, a strong model gives defensible answers that disagree with the finance
+  team's numbers. Both are reasons to have one in production.
+- **Cloud vs local tradeoff.** Claude is about 10x faster per question here,
+  needs no repairs, and is right on every question, for under 2 cents a
+  question. qwen-7b is free and private but tops out around 72% even with
+  every fix, and its remaining errors are confident wrong answers.
+- **The eval is now saturated for Claude.** 40/40 means this gold set can no
+  longer measure improvements for a strong model. A harder or more ambiguous
+  question set is needed to keep using it as a yardstick (see next steps).
