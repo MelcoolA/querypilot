@@ -1,13 +1,14 @@
 """Wire the nodes into a LangGraph state machine.
 
-    get_schema -> write_sql -> validate -> execute -> summarize
-                                ^    | error     | error   ^
-                                |    v           v         |
-                                +--- repair_sql <+         |
-                                         |                 |
-                                         +-----------------+
-                         (repair repeats an earlier attempt)
-    After MAX_REPAIRS failed repairs, validate or execute also route to summarize.
+    get_schema -> write_sql -> validate -> execute -> pick_chart -> summarize
+                                ^    | error     | error                ^
+                                |    v           v                      |
+                                +--- repair_sql <+                      |
+                                         |                              |
+                                         +------------------------------+
+                                     (repair repeats an earlier attempt)
+    After MAX_REPAIRS failed repairs, validate or execute also route straight
+    to summarize, skipping pick_chart (there is no result to chart).
 """
 from functools import partial
 
@@ -37,7 +38,7 @@ def route_after_validate(state: AgentState) -> str:
 
 
 def route_after_execute(state: AgentState) -> str:
-    return route_after_check(state, on_success="summarize")
+    return route_after_check(state, on_success="pick_chart")
 
 
 def route_after_repair(state: AgentState) -> str:
@@ -54,6 +55,7 @@ def build_graph(llm: LLM, warehouse: Warehouse):
     graph.add_node("validate", partial(nodes.validate, warehouse=warehouse))
     graph.add_node("execute", partial(nodes.execute, warehouse=warehouse))
     graph.add_node("repair_sql", partial(nodes.repair_sql, llm=llm, warehouse=warehouse))
+    graph.add_node("pick_chart", nodes.pick_chart)
     graph.add_node("summarize", partial(nodes.summarize, llm=llm))
 
     graph.add_edge(START, "get_schema")
@@ -62,5 +64,6 @@ def build_graph(llm: LLM, warehouse: Warehouse):
     graph.add_conditional_edges("validate", route_after_validate)
     graph.add_conditional_edges("execute", route_after_execute)
     graph.add_conditional_edges("repair_sql", route_after_repair)
+    graph.add_edge("pick_chart", "summarize")
     graph.add_edge("summarize", END)
     return graph.compile()

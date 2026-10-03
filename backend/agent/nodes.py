@@ -8,7 +8,7 @@ import re
 import sqlglot
 from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 
-from backend.agent import prompts, semantic
+from backend.agent import charts, prompts, semantic
 from backend.agent.state import AgentState
 from backend.formatting import format_table
 from backend.guardrails.sql_validator import DEFAULT_LIMIT, validate_sql
@@ -66,6 +66,11 @@ def execute(state: AgentState, warehouse: Warehouse) -> dict:
     except Exception as e:  # any DB error goes back to the LLM as feedback
         return {"error": f"{type(e).__name__}: {e}"}
     return {"columns": result.columns, "rows": result.rows, "error": ""}
+
+
+def pick_chart(state: AgentState) -> dict:
+    # Rule-based on the result's shape (see charts.py); no LLM call.
+    return {"chart": charts.pick_chart(state["columns"], state["rows"])}
 
 
 def repair_sql(state: AgentState, llm: LLM, warehouse: Warehouse) -> dict:

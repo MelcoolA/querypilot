@@ -89,7 +89,9 @@ The full change-by-change history, including what did not help, is in
 ```mermaid
 flowchart LR
     U([Business user]) --> CLI[CLI<br/>backend/cli.py]
+    U --> API[FastAPI /ask<br/>streams steps]
     CLI --> AG[LangGraph agent<br/>backend/agent]
+    API --> AG
     EV[Eval runner<br/>evals/] --> AG
     AG --> SEM[Semantic layer<br/>semantic/olist.yaml]
     AG --> VAL[SQL validator<br/>sqlglot]
@@ -105,7 +107,7 @@ flowchart LR
 
 Two small interfaces keep the agent independent of its providers. Every agent
 step calls one `LLM.complete()` method and one `Warehouse.run_query()` method.
-Switching from Ollama to Claude, or from Olist to TPC-H, is a `.env` setting,
+Switching from Ollama to Claude, or between datasets, is a `.env` setting,
 not a code change, which is also what makes a fair side-by-side eval possible.
 
 ### The agent graph
@@ -122,15 +124,18 @@ flowchart TD
     RS -- repeats an earlier attempt --> SU
     VA -- 3 repairs used up --> SU
     EX -- 3 repairs used up --> SU
-    EX -- rows --> SU[summarize<br/>plain-English answer,<br/>assumptions, caveats]
-    SU --> A([Answer + SQL + result table])
+    EX -- rows --> PC[pick_chart<br/>bar, line, single number,<br/>or table, by rules]
+    PC --> SU[summarize<br/>plain-English answer,<br/>assumptions, caveats]
+    SU --> A([Answer + SQL + table + chart])
 ```
 
 Each box is one function in `backend/agent/nodes.py`; `backend/agent/graph.py`
 wires them together. The state passed between steps holds the question, the
 schema context, the SQL, every failed attempt and its error, the result rows,
-and the answer. A `classify` step (reject questions the data can't answer)
-and a `pick_chart` step are planned for the web UI.
+and the answer. `pick_chart` uses plain rules on the result's shape (one
+number, values over time, values per category), not an LLM call, so it is
+free and instant. A `classify` step (reject questions the data can't answer)
+is planned.
 
 ## Why semantics matter
 
@@ -228,21 +233,21 @@ pip install -r requirements.txt
 # 2. Pull the local model
 ollama pull qwen2.5-coder:7b
 
-# 3. Create your config (defaults: Ollama + DuckDB)
+# 3. Create your config (defaults: Ollama + DuckDB + Olist)
 cp .env.example .env
 
-# 4. Generate the TPC-H sample database (about 25 MB)
+# 4. Download Olist from Kaggle (link below), unzip the 9 CSVs into data/olist/, then:
+make data-olist
+
+# 5. Optional: the TPC-H sample database, used only by the unit tests
 make data
 ```
 
-### The Olist dataset (used by the evals)
-
-1. Download [Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
-   from Kaggle and unzip the 9 CSV files into `data/olist/`.
-2. Run `make data-olist`. The load script gives tables short names, stores
-   dates as timestamps, joins English category names into `products`, and
-   reduces geolocation to one row per zip prefix so joins don't multiply rows.
-3. Set `DATASET=olist` in `.env` (or `DATASET=tpch` to switch back).
+[Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) is about
+100k real orders from a Brazilian marketplace (2016 to 2018). The load script
+gives tables short names, stores dates as timestamps, joins English category
+names into `products`, and reduces geolocation to one row per zip prefix so
+joins don't multiply rows.
 
 ### Choosing the LLM
 
@@ -275,12 +280,28 @@ off by default. Tests never send traces.
 ### Ask a question
 
 ```bash
-python -m backend.cli "top 5 customers by revenue"
-DATASET=olist python -m backend.cli "How many orders were delivered?"
+python -m backend.cli "How many orders were delivered?"
 ```
 
 The CLI prints each step as it runs, then the SQL, the result table, and the
 answer.
+
+### Run the API
+
+```bash
+make api    # http://localhost:8000, interactive docs at /docs
+```
+
+| Endpoint | What it does |
+|---|---|
+| `POST /ask` | Body `{"question": "..."}`. Streams Server-Sent Events: one `step` event per graph step as it finishes, then a `result` event with the answer, SQL, columns, rows, and chart spec. |
+| `GET /examples` | Example questions for the UI. |
+| `GET /health` | Model and dataset in use. |
+
+```bash
+curl -N -X POST localhost:8000/ask -H 'Content-Type: application/json' \
+  -d '{"question": "How many orders were placed each month in 2017?"}'
+```
 
 ### Run the evals and tests
 

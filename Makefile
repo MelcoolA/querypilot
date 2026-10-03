@@ -1,4 +1,4 @@
-.PHONY: data data-olist test ask eval
+.PHONY: data data-olist test ask eval api
 
 # Build the local TPC-H database (scale factor 0.1, about 25 MB)
 data:
@@ -17,3 +17,7 @@ ask:
 # Run the agent on all gold questions and save results to evals/results/
 eval:
 	python -m evals.run_evals
+
+# Run the API on http://localhost:8000 (docs at /docs)
+api:
+	uvicorn --factory backend.api.main:create_app --reload --port 8000

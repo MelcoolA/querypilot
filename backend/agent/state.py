@@ -13,6 +13,7 @@ class AgentState(TypedDict, total=False):
     repeated: bool           # True if a repair returned SQL it had already tried
     columns: list[str]
     rows: list[tuple]
+    chart: dict              # how to display the result: {"type", "x", "y", "reason"}
     answer: str              # final plain-English answer
     input_tokens: int        # running totals across all LLM calls, for cost tracking
     output_tokens: int

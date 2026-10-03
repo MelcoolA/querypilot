@@ -6,7 +6,7 @@ import sys
 import time
 
 from backend.agent.graph import build_graph
-from backend.formatting import format_table
+from backend.formatting import describe_step, format_table
 from backend.llm import get_llm
 from backend.warehouse import get_warehouse
 
@@ -28,7 +28,7 @@ def main() -> None:
     for update in agent.stream(state, config=config, stream_mode="updates"):
         for node, changes in update.items():
             state.update(changes)
-            print(f"[{time.time() - start:5.1f}s] {node:<10} {_describe(node, changes)}")
+            print(f"[{time.time() - start:5.1f}s] {node:<10} {describe_step(node, changes)}")
 
     print("\nSQL:\n" + state.get("sql", ""))
     if state.get("rows") is not None and not state.get("error"):
@@ -38,18 +38,6 @@ def main() -> None:
         f"\n({time.time() - start:.1f}s, {state.get('attempts', 0)} repairs, "
         f"{state.get('input_tokens', 0)} in / {state.get('output_tokens', 0)} out tokens)"
     )
-
-
-def _describe(node: str, changes: dict) -> str:
-    if changes.get("error"):
-        return f"error: {changes['error'].splitlines()[0][:100]}"
-    if node == "get_schema":
-        return f"{len(changes['tables'])} tables"
-    if node == "execute":
-        return f"{len(changes['rows'])} rows"
-    if node == "repair_sql":
-        return f"attempt {changes['attempts']}"
-    return "ok"
 
 
 if __name__ == "__main__":

@@ -18,6 +18,21 @@ def format_table(columns: list[str], rows: list[tuple], max_rows: int = 20) -> s
     return "\n".join(lines)
 
 
+def describe_step(node: str, changes: dict) -> str:
+    """One short line about what a graph step just did (CLI and API progress)."""
+    if changes.get("error"):
+        return f"error: {changes['error'].splitlines()[0][:100]}"
+    if node == "get_schema":
+        return f"{len(changes['tables'])} tables"
+    if node == "execute":
+        return f"{len(changes['rows'])} rows"
+    if node == "repair_sql":
+        return f"attempt {changes['attempts']}"
+    if node == "pick_chart":
+        return changes["chart"]["type"].replace("_", " ")
+    return "ok"
+
+
 def _cell(value) -> str:
     if value is None:
         return "NULL"
