@@ -66,7 +66,7 @@ def test_real_server_over_stdio():
     async def session_calls():
         params = StdioServerParameters(
             command=sys.executable, args=["-m", "backend.mcp_server"],
-            env={"WAREHOUSE": "duckdb", "DATASET": "olist", "LANGSMITH_TRACING": "false"},
+            env={"WAREHOUSE": "duckdb", "DATASET": "olist", "LANGSMITH_TRACING": "false", "MCP_WARM_UP": "false"},
         )
         async with stdio_client(params) as (read, write), ClientSession(read, write) as session:
             await session.initialize()

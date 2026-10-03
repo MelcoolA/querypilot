@@ -19,8 +19,13 @@ definitions:
     only safe on the orders table.
   revenue: >
     Revenue is SUM(order_items.price). It excludes freight. Never multiply
-    price by freight_value. Average order value is revenue per order: sum price
-    per order_id first, then average those totals.
+    price by freight_value. Revenue counts every order item regardless of
+    order status (canceled and unavailable orders included), unless the
+    question asks for a specific status. Average order value is revenue per
+    order: sum price per order_id first, then average those totals.
+  currency: >
+    All money columns (price, freight_value, payment_value) are in Brazilian
+    reais (BRL, written R$), not dollars.
   items per order: >
     order_items has one row per item. Items per order is
     COUNT(*) / COUNT(DISTINCT order_id) on order_items. order_item_id is the
@@ -46,6 +51,13 @@ definitions:
     An order (see delivery metrics) where order_delivered_customer_date > order_estimated_delivery_date.
   percentage: >
     Report percentages on a 0 to 100 scale: 100.0 * part / whole.
+
+# Notes for the summarize step, which writes the plain-English answer. It
+# never sees the definitions above, so anything the answer must get right
+# about units or metric choices goes here.
+answer_notes:
+  - Money amounts are Brazilian reais. Write them as R$ (for example R$ 5,202,955.05), never with $ or as dollars.
+  - Revenue counts every order item regardless of order status, so canceled and unavailable orders are included. Say so when you report revenue.
 
 # Where columns live, and how to join. Prevents e.g. reading customer_state from orders.
 joins:

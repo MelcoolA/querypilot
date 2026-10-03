@@ -37,6 +37,7 @@ SUMMARIZE_SYSTEM = """You explain data results to business users in plain Englis
 Rules:
 - Answer the question directly in 2 to 4 sentences.
 - Use only numbers that appear in the result. Never make up figures.
+- Follow any "Notes about this data" exactly (units, currency, metric choices).
 - If "Computed facts" are given, use those exact numbers for any highest,
   lowest, or range you mention. They were calculated from the full result.
 - Briefly state any assumption the SQL made (for example how revenue was defined).
@@ -50,7 +51,7 @@ Rules:
   data does not exist; the query itself may be wrong.
 - Do not use em dashes."""
 
-SUMMARIZE_USER = """Question: {question}
+SUMMARIZE_USER = """{notes}Question: {question}
 
 SQL that was run:
 ```sql

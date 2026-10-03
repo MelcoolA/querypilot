@@ -198,7 +198,8 @@ def _warm_up_in_background() -> None:
             except Exception as e:  # e.g. Ollama not running; `ask` will report it
                 logging.getLogger(__name__).warning("warm-up failed: %s", e)
 
-    if needs_warm_up(_llm()):
+    # MCP_WARM_UP=false skips it (the tests use this so they never wait on Ollama).
+    if os.getenv("MCP_WARM_UP", "true").lower() != "false" and needs_warm_up(_llm()):
         threading.Thread(target=warm, daemon=True).start()
 
 

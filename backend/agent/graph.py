@@ -56,7 +56,7 @@ def build_graph(llm: LLM, warehouse: Warehouse):
     graph.add_node("execute", partial(nodes.execute, warehouse=warehouse))
     graph.add_node("repair_sql", partial(nodes.repair_sql, llm=llm, warehouse=warehouse))
     graph.add_node("pick_chart", nodes.pick_chart)
-    graph.add_node("summarize", partial(nodes.summarize, llm=llm))
+    graph.add_node("summarize", partial(nodes.summarize, llm=llm, warehouse=warehouse))
 
     graph.add_edge(START, "get_schema")
     graph.add_edge("get_schema", "write_sql")

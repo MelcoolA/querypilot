@@ -125,7 +125,7 @@ def _canonical_sql(sql: str, tables: list[str], dialect: str) -> str:
     return tree.sql(dialect=dialect)
 
 
-def summarize(state: AgentState, llm: LLM) -> dict:
+def summarize(state: AgentState, llm: LLM, warehouse: Warehouse) -> dict:
     # Reached either with results, or after the repair budget ran out.
     # Guardrail: when we have no valid result we say so instead of guessing.
     if state.get("error"):
@@ -150,6 +150,7 @@ def summarize(state: AgentState, llm: LLM) -> dict:
     response = llm.complete(
         system=prompts.SUMMARIZE_SYSTEM,
         prompt=prompts.SUMMARIZE_USER.format(
+            notes=_answer_notes(warehouse),
             question=state["question"],
             sql=state["sql"],
             row_count=len(rows),
@@ -171,6 +172,14 @@ def summarize(state: AgentState, llm: LLM) -> dict:
             "cover all the data. Ask a more specific or aggregated question for a complete answer."
         )
     return {"answer": answer, **_tokens(state, response)}
+
+
+def _answer_notes(warehouse: Warehouse) -> str:
+    """Dataset notes for the answer (currency, metric choices) from the semantic layer."""
+    notes = (semantic.load_semantic(warehouse.dataset) or {}).get("answer_notes") or []
+    if not notes:
+        return ""
+    return "Notes about this data:\n" + "\n".join(f"- {n}" for n in notes) + "\n\n"
 
 
 def _facts_block(columns: list[str], rows: list[tuple]) -> str:

@@ -82,3 +82,24 @@ def test_examples_are_translated_for_snowflake_only():
     sem = load_semantic("olist")
     assert render_examples(sem, "duckdb") == render_examples(sem)  # DuckDB prompt unchanged
     assert render_examples(sem, "snowflake") != render_examples(sem, "duckdb")
+
+
+def test_currency_and_revenue_scope_reach_both_prompts(olist):
+    from tests.test_agent_graph import FakeLLM
+    from backend.agent.graph import build_graph
+
+    ctx = nodes.get_schema({}, olist)["schema_context"]
+    assert "- currency: All money columns" in ctx
+    assert "regardless of order status" in ctx
+    llm = FakeLLM(["SELECT SUM(price) AS revenue FROM order_items"])
+    build_graph(llm, olist).invoke({"question": "total revenue?"})
+    summarize_prompt = llm.prompts[-1]
+    assert summarize_prompt.startswith("Notes about this data:")
+    assert "R$" in summarize_prompt
+
+
+def test_tpch_summaries_get_no_notes():
+    from backend.agent.nodes import _answer_notes
+    from backend.warehouse.duckdb_wh import DuckDBWarehouse
+
+    assert _answer_notes(DuckDBWarehouse("data/tpch.duckdb", dataset="tpch")) == ""
