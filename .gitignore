@@ -4,3 +4,6 @@ __pycache__/
 .pytest_cache/
 data/
 .DS_Store
+
+# Private keys and other local secrets
+.secrets/
