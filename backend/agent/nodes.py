@@ -11,7 +11,7 @@ from sqlglot.optimizer.normalize_identifiers import normalize_identifiers
 from backend.agent import prompts, semantic
 from backend.agent.state import AgentState
 from backend.formatting import format_table
-from backend.guardrails.sql_validator import validate_sql
+from backend.guardrails.sql_validator import DEFAULT_LIMIT, validate_sql
 from backend.llm import LLM, LLMResponse
 from backend.warehouse import Warehouse
 
@@ -109,14 +109,16 @@ def summarize(state: AgentState, llm: LLM) -> dict:
     # Reached either with results, or after the repair budget ran out.
     # Guardrail: when we have no valid result we say so instead of guessing.
     if state.get("error"):
+        n = state["attempts"]
         return {
             "answer": (
-                f"I could not answer this confidently. After {state['attempts']} repair "
-                f"attempts the query still failed with: {state['error']}"
+                f"I could not answer this confidently. After {n} repair "
+                f"attempt{'' if n == 1 else 's'} the query still failed with: {state['error']}"
             )
         }
     rows = state["rows"]
     truncated = len(rows) > SUMMARY_MAX_ROWS
+    hit_limit = len(rows) >= DEFAULT_LIMIT  # the guardrail cut the result off
     response = llm.complete(
         system=prompts.SUMMARIZE_SYSTEM,
         prompt=prompts.SUMMARIZE_USER.format(
@@ -125,9 +127,21 @@ def summarize(state: AgentState, llm: LLM) -> dict:
             row_count=len(rows),
             truncated_note=f", first {SUMMARY_MAX_ROWS} shown" if truncated else "",
             result=format_table(state["columns"], rows, max_rows=SUMMARY_MAX_ROWS),
+            limit_warning=(
+                f"\n\nWARNING: the result hit the {DEFAULT_LIMIT}-row limit, so it is cut off "
+                "and is not the full data." if hit_limit else ""
+            ),
         ),
     )
-    return {"answer": response.text.strip(), **_tokens(state, response)}
+    answer = response.text.strip()
+    if hit_limit:
+        # Added in code, not left to the LLM: the user must always learn the
+        # result is partial, even if the model ignores the warning above.
+        answer += (
+            f"\n\nNote: this result was cut off at {DEFAULT_LIMIT:,} rows, so it does not "
+            "cover all the data. Ask a more specific or aggregated question for a complete answer."
+        )
+    return {"answer": answer, **_tokens(state, response)}
 
 
 def extract_sql(text: str) -> str:

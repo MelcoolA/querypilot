@@ -88,3 +88,24 @@ def test_canonical_sql_ignores_identifier_case_but_not_literals():
         _canonical_sql("SELECT c_name FROM customer LIMIT 1000", tables, "duckdb")
     assert _canonical_sql("SELECT 1 FROM customer WHERE c_name = 'A'", tables, "duckdb") != \
         _canonical_sql("SELECT 1 FROM customer WHERE c_name = 'a'", tables, "duckdb")
+
+
+def test_summary_flags_results_cut_off_at_row_limit(wh):
+    llm = FakeLLM(["SELECT l_orderkey FROM lineitem"])  # far more than 1000 rows
+    state = build_graph(llm, wh).invoke({"question": "list line items"})
+    assert len(state["rows"]) == 1000
+    assert "WARNING: the result hit the 1000-row limit" in llm.prompts[-1]
+    assert "cut off at 1,000 rows" in state["answer"]
+
+
+def test_summary_has_no_limit_note_for_small_results(wh):
+    llm = FakeLLM(["SELECT count(*) AS n FROM region"])
+    state = build_graph(llm, wh).invoke({"question": "how many regions?"})
+    assert "WARNING" not in llm.prompts[-1]
+    assert "cut off" not in state["answer"]
+
+
+def test_give_up_message_uses_singular_for_one_attempt(wh):
+    llm = FakeLLM(["SELECT nope FROM region", "SELECT nope FROM region"])
+    state = build_graph(llm, wh).invoke({"question": "how many regions?"})
+    assert "After 1 repair attempt the query" in state["answer"]

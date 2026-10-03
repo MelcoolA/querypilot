@@ -8,6 +8,7 @@ One entry per change to the agent, with the eval score after it. Dataset: Olist
 | 1 | Baseline, no fixes | qwen2.5-coder:7b | 14/40 (35%) | 10/12 | 3/16 | 1/12 | 4 gave up, 43.2s avg, 0.35 repairs avg |
 | 2 | Semantic layer (`semantic/olist.yaml`) | qwen2.5-coder:7b | **29/40 (72%)** | 12/12 | 12/16 | 5/12 | 1 gave up, 40.1s avg, 0.17 repairs avg |
 | 3 | Repair loop: attempt history, stop on repeat (h12 reworded) | qwen2.5-coder:7b | 30/40 (75%) | 12/12 | 12/16 | 6/12 | +1 is from rewording h12, not the fix; 2 gave up, 40.9s avg |
+| 4 | Comparison rule in write_sql; summarize warns on row limit | qwen2.5-coder:7b | 29/40 (72%) | 12/12 | 11/16 | 6/12 | -1 is within noise (see entry); answers clearly better; 4 gave up |
 
 ## 0. Gold set created
 
@@ -131,3 +132,51 @@ What the fix did change:
 Takeaway: the repair loop is now cheaper and more honest, but repairs are
 not where qwen2.5-coder:7b's accuracy is lost. The remaining failures are
 wrong logic in SQL that runs without errors, which no repair ever sees.
+
+## 4. Summarize step and comparison rule: 29/40 (72%), answers better
+
+Changes:
+- write_sql prompt: comparison questions return one row per group with the
+  aggregate, covering every compared group and only those; single-number
+  questions return one row.
+- summarize prompt: a LIMIT only caps returned rows (aggregates still cover
+  all data); if the result hit the row limit, say it is partial; only compare
+  groups present in the result; an empty result means "no rows matched", not
+  "the data does not exist".
+- When a result hits the 1,000-row limit, code (not the LLM) appends a fixed
+  note to the answer, so the user always learns it is partial.
+- Give-up message wording ("1 repair attempt").
+
+Results: `results/2026-10-02_170932_ollama-qwen2.5-coder-7b_fix3-summarize/`.
+
+Score changes vs fix 2: h07 fixed (the comparison rule: one row per group
+instead of 1,000 raw orders); m07 lost (back to AVG(order_item_id), despite
+the semantic layer saying it is not a quantity); h12 lost (nearly the same
+SQL as fix 2, which only passed after 2 repairs; this time the first repair
+repeated itself). h06 went from wrong to gave up.
+
+**Noise finding.** This small prompt change altered the first SQL on 9 of 40
+questions, including questions it has nothing to do with. With a 7B model at
+temperature 0, any prompt edit shifts several answers in both directions, so
+a change of 1 question between runs is not meaningful at n=40. The real
+signal so far is 14 -> about 30; differences among fixes 1 to 3 (29, 30, 29)
+are within noise.
+
+Answer quality (the main goal of this fix, not measured by the scorer):
+- e02: no longer claims the average covers "the first 1000 rows".
+- h02: now compares late (2.57) and on-time (4.21) reviews and reaches the
+  right conclusion. Baseline said the opposite of the truth. Still scored
+  wrong: "on time" includes canceled/undelivered orders (gold 4.29).
+- m11: the answer now says the result is partial and carries the cut-off
+  note, but still repeats the meaningless "1,000 customers" (true answer 2,997).
+- m03: amounts still shown with "$" for Brazilian reais; the currency is only
+  a comment in the semantic file and never reaches the prompt.
+
+Known scorer limitation: h02 returned one wide row (late_avg, on_time_avg)
+where gold has one row per group. Both shapes are valid answers; the scorer
+only accepts the second. It did not change this run's score (the values were
+also wrong), but it could in a future run.
+
+Latency fell from 40.9s to 23.0s average, but prompts got slightly longer
+and output barely changed, so this is almost certainly lower load on the
+laptop, not the fix. Latency comparisons between local runs are unreliable.

@@ -7,6 +7,12 @@ Rules:
 - If the schema lists BUSINESS DEFINITIONS, follow them exactly.
 - Use explicit JOIN ... ON conditions.
 - Give computed columns clear aliases (e.g. total_revenue).
+- If the question compares groups (for example late vs on-time orders, or one
+  payment type versus another), return one row per group with the aggregated
+  metric (e.g. AVG or COUNT), not individual rows. Include every group being
+  compared, and only those groups.
+- If the question asks for a single number (how many, what percentage, what
+  is the average), return a single row.
 - Return only the SQL inside a ```sql code block, with no explanation."""
 
 WRITE_SQL_USER = """Schema:
@@ -32,7 +38,14 @@ Rules:
 - Answer the question directly in 2 to 4 sentences.
 - Use only numbers that appear in the result. Never make up figures.
 - Briefly state any assumption the SQL made (for example how revenue was defined).
-- If the result is empty, say so plainly.
+- A LIMIT at the end of the SQL only caps how many result rows come back.
+  Aggregates like COUNT, SUM, and AVG are still computed over all matching data.
+- If you are told the result hit the row limit, it is cut off: say the result
+  is partial, and do not state totals, counts, or conclusions about all the data.
+- If the question compares groups, only compare groups that appear in the
+  result. If a group is missing, say the comparison cannot be made from this result.
+- If the result is empty, say that no rows matched the query. Do not claim the
+  data does not exist; the query itself may be wrong.
 - Do not use em dashes."""
 
 SUMMARIZE_USER = """Question: {question}
@@ -43,4 +56,4 @@ SQL that was run:
 ```
 
 Result ({row_count} rows{truncated_note}):
-{result}"""
+{result}{limit_warning}"""

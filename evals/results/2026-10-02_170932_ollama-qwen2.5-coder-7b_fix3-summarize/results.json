@@ -1,0 +1,674 @@
+{
+  "model": "ollama:qwen2.5-coder:7b",
+  "results": [
+    {
+      "id": "e01",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "How many orders were delivered?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(order_id) AS delivered_orders\nFROM orders\nWHERE\n  order_status = 'delivered'\nLIMIT 1000",
+      "answer": "96,478 orders were delivered.",
+      "latency_s": 12.96,
+      "repairs": 0,
+      "input_tokens": 4550,
+      "output_tokens": 36,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "e02",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "What is the average review score?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  AVG(review_score) AS average_review_score\nFROM order_reviews\nLIMIT 1000",
+      "answer": "The average review score is 4.09.",
+      "latency_s": 7.8,
+      "repairs": 0,
+      "input_tokens": 4543,
+      "output_tokens": 31,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "e03",
+      "difficulty": "easy",
+      "traps": [
+        "customer_unique_id"
+      ],
+      "question": "How many unique customers are there?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(DISTINCT customer_unique_id) AS unique_customers\nFROM customers\nLIMIT 1000",
+      "answer": "There are 96,096 unique customers. The SQL query counted distinct customer IDs from the customers table, assuming a customer_unique_id represents a unique customer. The result is partial due to the LIMIT clause.",
+      "latency_s": 15.92,
+      "repairs": 0,
+      "input_tokens": 4547,
+      "output_tokens": 67,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "e04",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "How many sellers are there?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(DISTINCT seller_id) AS seller_count\nFROM sellers\nLIMIT 1000",
+      "answer": "There are 3095 unique sellers.",
+      "latency_s": 7.56,
+      "repairs": 0,
+      "input_tokens": 4540,
+      "output_tokens": 31,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "e05",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "How many orders were canceled?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(order_id) AS canceled_orders\nFROM orders\nWHERE\n  order_status = 'canceled'\nLIMIT 1000",
+      "answer": "625 orders were canceled.",
+      "latency_s": 8.34,
+      "repairs": 0,
+      "input_tokens": 4547,
+      "output_tokens": 33,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "e06",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "How many orders are there in each order status?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  order_status,\n  COUNT(order_id) AS order_count\nFROM orders\nGROUP BY\n  order_status\nLIMIT 1000",
+      "answer": "There are 1107 orders that have been shipped, 96,478 orders that have been delivered, 5 orders that are still created, 2 orders that have been approved, 314 orders that have been invoiced, 301 orders that are still processing, 625 orders that have been canceled, and 609 orders that are unavailable.",
+      "latency_s": 26.65,
+      "repairs": 0,
+      "input_tokens": 4625,
+      "output_tokens": 109,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "e07",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "What is the average price of an order item?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  AVG(price) AS average_item_price\nFROM order_items\nLIMIT 1000",
+      "answer": "The average price of an order item is $120.65.",
+      "latency_s": 9.53,
+      "repairs": 0,
+      "input_tokens": 4550,
+      "output_tokens": 35,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "e08",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "How many products are in the health and beauty category?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(*) AS product_count\nFROM products\nWHERE\n  product_category = 'health_beauty'\nLIMIT 1000",
+      "answer": "There are 2444 products in the health and beauty category.",
+      "latency_s": 7.13,
+      "repairs": 0,
+      "input_tokens": 4556,
+      "output_tokens": 40,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "e09",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "What percentage of reviews have a score of 5?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  100.0 * COUNT(CASE WHEN review_score = 5 THEN 1 ELSE NULL END) / COUNT(review_id) AS percentage_5_star_reviews\nFROM order_reviews\nLIMIT 1000",
+      "answer": "57.78% of reviews have a score of 5.",
+      "latency_s": 7.6,
+      "repairs": 0,
+      "input_tokens": 4580,
+      "output_tokens": 65,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "e10",
+      "difficulty": "easy",
+      "traps": [
+        "date_math"
+      ],
+      "question": "How many orders were placed in 2018?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(DISTINCT order_id) AS order_count\nFROM orders\nWHERE\n  order_purchase_timestamp >= '2018-01-01'\n  AND order_purchase_timestamp < '2019-01-01'\nLIMIT 1000",
+      "answer": "In 2018, 54,011 unique orders were placed. The query counted distinct order IDs from the orders table where the purchase timestamp was within the year 2018.",
+      "latency_s": 11.02,
+      "repairs": 0,
+      "input_tokens": 4590,
+      "output_tokens": 98,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "e11",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "Which 5 states have the most sellers?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  seller_state,\n  COUNT(seller_id) AS seller_count\nFROM sellers\nGROUP BY\n  seller_state\nORDER BY\n  seller_count DESC\nLIMIT 5",
+      "answer": "The top 5 states with the most sellers are SP (1849), PR (349), MG (244), SC (190), and RJ (171).",
+      "latency_s": 8.96,
+      "repairs": 0,
+      "input_tokens": 4602,
+      "output_tokens": 79,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "e12",
+      "difficulty": "easy",
+      "traps": [],
+      "question": "What is the total freight value across all order items?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  SUM(freight_value) AS total_freight_value\nFROM order_items\nLIMIT 1000",
+      "answer": "The total freight value across all order items is $2,251,909.54.",
+      "latency_s": 5.62,
+      "repairs": 0,
+      "input_tokens": 4563,
+      "output_tokens": 46,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m01",
+      "difficulty": "medium",
+      "traps": [
+        "payment_rows"
+      ],
+      "question": "How many orders were paid by each payment type?",
+      "status": "wrong",
+      "reason": "no agent column matches gold column 2 (values differ)",
+      "sql": "SELECT\n  payment_type,\n  COUNT(order_id) AS order_count\nFROM order_payments\nGROUP BY\n  payment_type\nLIMIT 1000",
+      "answer": "The number of orders paid by each payment type is as follows: boleto (19,784), voucher (5,775), debit card (1,529), not defined (3), and credit card (76,795).",
+      "latency_s": 8.87,
+      "repairs": 0,
+      "input_tokens": 4605,
+      "output_tokens": 84,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m02",
+      "difficulty": "medium",
+      "traps": [
+        "customer_unique_id"
+      ],
+      "question": "Which 5 states have the most customers?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  customer_state,\n  COUNT(DISTINCT customer_unique_id) AS customer_count\nFROM customers\nGROUP BY\n  customer_state\nORDER BY\n  customer_count DESC\nLIMIT 5",
+      "answer": "The five states with the most customers are SP (S\u00e3o Paulo) with 40,302 customers, RJ (Rio de Janeiro) with 12,384 customers, MG (Minas Gerais) with 11,259 customers, RS (Rio Grande do Sul) with 5,277 customers, and PR (Paran\u00e1) with 4,882 customers.",
+      "latency_s": 13.98,
+      "repairs": 0,
+      "input_tokens": 4612,
+      "output_tokens": 139,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m03",
+      "difficulty": "medium",
+      "traps": [
+        "revenue"
+      ],
+      "question": "What are the top 5 product categories by revenue?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  p.product_category,\n  SUM(oi.price) AS total_revenue\nFROM order_items AS oi\nJOIN products AS p\n  ON oi.product_id = p.product_id\nGROUP BY\n  p.product_category\nORDER BY\n  total_revenue DESC\nLIMIT 5",
+      "answer": "The top 5 product categories by revenue are:\n\n1. Health and Beauty: $1,258,681.34\n2. Watches and Gifts: $1,205,005.68\n3. Bed, Bath, and Table: $1,036,988.68\n4. Sports and Leisure: $988,048.97\n5. Computers and Accessories: $911,954.32\n\nRevenue is calculated as the sum of prices for all items in each category.",
+      "latency_s": 19.36,
+      "repairs": 0,
+      "input_tokens": 4681,
+      "output_tokens": 190,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m04",
+      "difficulty": "medium",
+      "traps": [
+        "date_math"
+      ],
+      "question": "Which month had the highest number of orders?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  DATE_TRUNC('MONTH', order_purchase_timestamp) AS month,\n  COUNT(DISTINCT order_id) AS order_count\nFROM orders\nGROUP BY\n  month\nORDER BY\n  order_count DESC\nLIMIT 1",
+      "answer": "The month with the highest number of orders was November 2017, with 7,544 distinct orders.",
+      "latency_s": 9.1,
+      "repairs": 0,
+      "input_tokens": 4596,
+      "output_tokens": 82,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m05",
+      "difficulty": "medium",
+      "traps": [
+        "revenue",
+        "date_math"
+      ],
+      "question": "What was the total revenue in each year?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  DATE_TRUNC('YEAR', orders.order_purchase_timestamp) AS year,\n  SUM(order_items.price) AS total_revenue\nFROM orders\nJOIN order_items\n  ON orders.order_id = order_items.order_id\nGROUP BY\n  year\nORDER BY\n  year\nLIMIT 1000",
+      "answer": "The total revenue for each year was as follows:\n- 2016: $49,785.92\n- 2017: $6,155,806.98\n- 2018: $7,386,050.80",
+      "latency_s": 14.49,
+      "repairs": 0,
+      "input_tokens": 4686,
+      "output_tokens": 134,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m06",
+      "difficulty": "medium",
+      "traps": [
+        "revenue"
+      ],
+      "question": "Which 10 sellers have the highest revenue?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  s.seller_id,\n  s.seller_city,\n  s.seller_state,\n  SUM(oi.price) AS total_revenue\nFROM sellers AS s\nJOIN order_items AS oi\n  ON s.seller_id = oi.seller_id\nGROUP BY\n  s.seller_id,\n  s.seller_city,\n  s.seller_state\nORDER BY\n  total_revenue DESC\nLIMIT 10",
+      "answer": "The top 10 sellers by revenue are:\n\n1. Guariba, SP - $229,472.63\n2. Lauru de Freitas, BA - $222,776.05\n3. Ibitinga, SP - $200,472.92\n4. Sumare, SP - $194,042.03\n5. Itaquaquecetuba, SP - $187,923.89\n6. Barueri, SP - $176,431.87\n7. Piracicaba, SP - $160,236.57\n8. S\u00e3o Paulo, SP - $141,745.53\n9. S\u00e3o Paulo, SP - $138,968.55\n10. S\u00e3o Paulo, SP - $135,171.70\n\nRevenue is calculated as the sum of prices from order items.",
+      "latency_s": 37.26,
+      "repairs": 0,
+      "input_tokens": 5130,
+      "output_tokens": 317,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m07",
+      "difficulty": "medium",
+      "traps": [
+        "fanout"
+      ],
+      "question": "What is the average number of items per order?",
+      "status": "wrong",
+      "reason": "no agent column matches gold column 1 (values differ)",
+      "sql": "SELECT\n  AVG(order_item_id) AS average_items_per_order\nFROM order_items\nLIMIT 1000",
+      "answer": "The average number of items per order is 1.20.",
+      "latency_s": 7.25,
+      "repairs": 0,
+      "input_tokens": 4552,
+      "output_tokens": 36,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m08",
+      "difficulty": "medium",
+      "traps": [
+        "revenue",
+        "fanout"
+      ],
+      "question": "What is the average order value?",
+      "status": "wrong",
+      "reason": "no agent column matches gold column 1 (values differ)",
+      "sql": "SELECT\n  AVG(order_items.price) AS average_order_value\nFROM order_items\nLIMIT 1000",
+      "answer": "The average order value is $120.65.",
+      "latency_s": 4.59,
+      "repairs": 0,
+      "input_tokens": 4546,
+      "output_tokens": 34,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m09",
+      "difficulty": "medium",
+      "traps": [
+        "fanout"
+      ],
+      "question": "Which 5 product categories appear in the most orders?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  p.product_category,\n  COUNT(DISTINCT o.order_id) AS order_count\nFROM orders AS o\nJOIN order_items AS oi\n  ON o.order_id = oi.order_id\nJOIN products AS p\n  ON oi.product_id = p.product_id\nGROUP BY\n  p.product_category\nORDER BY\n  order_count DESC\nLIMIT 5",
+      "answer": "The five product categories that appear in the most orders are: bed_bath_table (9417 orders), health_beauty (8836 orders), sports_leisure (7720 orders), computers_accessories (6689 orders), and furniture_decor (6449 orders).",
+      "latency_s": 16.84,
+      "repairs": 0,
+      "input_tokens": 4659,
+      "output_tokens": 131,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m10",
+      "difficulty": "medium",
+      "traps": [],
+      "question": "What is the average number of installments for credit card payments?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  AVG(payment_installments) AS average_installments\nFROM order_payments\nWHERE\n  payment_type = 'credit_card'\nLIMIT 1000",
+      "answer": "The average number of installments for credit card payments is 3.51.",
+      "latency_s": 6.89,
+      "repairs": 0,
+      "input_tokens": 4566,
+      "output_tokens": 46,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m11",
+      "difficulty": "medium",
+      "traps": [
+        "customer_unique_id"
+      ],
+      "question": "How many customers placed more than one order?",
+      "status": "wrong",
+      "reason": "row count 1000, expected 1",
+      "sql": "SELECT\n  COUNT(DISTINCT customer_unique_id) AS repeat_customers\nFROM customers\nJOIN orders\n  ON customers.customer_id = orders.customer_id\nGROUP BY\n  customer_unique_id\nHAVING\n  COUNT(order_id) > 1\nLIMIT 1000",
+      "answer": "Based on the data provided, 1,000 customers placed more than one order. The result is partial, so the actual number of customers who placed more than one order could be higher.\n\nNote: this result was cut off at 1,000 rows, so it does not cover all the data. Ask a more specific or aggregated question for a complete answer.",
+      "latency_s": 20.96,
+      "repairs": 1,
+      "input_tokens": 9120,
+      "output_tokens": 134,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m12",
+      "difficulty": "medium",
+      "traps": [
+        "customer_unique_id"
+      ],
+      "question": "Which 5 cities have the most customers?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  customer_city,\n  COUNT(DISTINCT customer_unique_id) AS customer_count\nFROM customers\nGROUP BY\n  customer_city\nORDER BY\n  customer_count DESC\nLIMIT 5",
+      "answer": "The top 5 cities with the most customers are S\u00e3o Paulo with 14,984 customers, Rio de Janeiro with 6,620 customers, Belo Horizonte with 2,672 customers, Bras\u00edlia with 2,069 customers, and Curitiba with 1,465 customers.",
+      "latency_s": 15.99,
+      "repairs": 0,
+      "input_tokens": 4621,
+      "output_tokens": 121,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m13",
+      "difficulty": "medium",
+      "traps": [
+        "revenue"
+      ],
+      "question": "Which 5 customer states generated the most revenue?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  c.customer_state,\n  SUM(oi.price) AS total_revenue\nFROM orders AS o\nJOIN customers AS c\n  ON o.customer_id = c.customer_id\nJOIN order_items AS oi\n  ON o.order_id = oi.order_id\nGROUP BY\n  c.customer_state\nORDER BY\n  total_revenue DESC\nLIMIT 5",
+      "answer": "The top 5 customer states that generated the most revenue are SP (S\u00e3o Paulo) with $5,202,955.05, RJ (Rio de Janeiro) with $1,824,092.67, MG (Minas Gerais) with $1,585,308.03, RS (Rio Grande do Sul) with $750,304.02, and PR (Paran\u00e1) with $683,083.76.",
+      "latency_s": 25.63,
+      "repairs": 0,
+      "input_tokens": 4682,
+      "output_tokens": 196,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m14",
+      "difficulty": "medium",
+      "traps": [
+        "late_delivery"
+      ],
+      "question": "How many orders were delivered late?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  COUNT(order_id) AS late_order_count\nFROM orders\nWHERE\n  order_status = 'delivered'\n  AND order_delivered_customer_date > order_estimated_delivery_date\nLIMIT 1000",
+      "answer": "7826 orders were delivered late. The query assumed that an order is considered late if it was delivered after the estimated delivery date.",
+      "latency_s": 9.56,
+      "repairs": 0,
+      "input_tokens": 4566,
+      "output_tokens": 68,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m15",
+      "difficulty": "medium",
+      "traps": [
+        "payment_rows",
+        "comparison"
+      ],
+      "question": "What is the average total payment per order for credit card versus boleto?",
+      "status": "wrong",
+      "reason": "row count 5, expected 2",
+      "sql": "SELECT\n  payment_type,\n  AVG(payment_value) AS average_payment\nFROM order_payments\nGROUP BY\n  payment_type\nLIMIT 1000",
+      "answer": "The average total payment per order for credit card is $163.32, while for boleto it is $145.03.",
+      "latency_s": 9.97,
+      "repairs": 0,
+      "input_tokens": 4626,
+      "output_tokens": 67,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "m16",
+      "difficulty": "medium",
+      "traps": [
+        "date_math"
+      ],
+      "question": "How many orders were placed each month in 2017?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  DATE_TRUNC('MONTH', order_purchase_timestamp) AS month,\n  COUNT(DISTINCT order_id) AS order_count\nFROM orders\nWHERE\n  order_purchase_timestamp >= '2017-01-01'\n  AND order_purchase_timestamp < '2018-01-01'\nGROUP BY\n  month\nORDER BY\n  month\nLIMIT 1000",
+      "answer": "In 2017, the number of orders placed each month ranged from 2,404 in April to 7,544 in November.",
+      "latency_s": 22.6,
+      "repairs": 0,
+      "input_tokens": 4930,
+      "output_tokens": 122,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "h01",
+      "difficulty": "hard",
+      "traps": [
+        "date_math"
+      ],
+      "question": "What is the average delivery time in days by state?",
+      "status": "error",
+      "reason": "agent gave up: BinderException: Binder Error: Table \"o\" does not have a column named \"seller_id\"",
+      "sql": "SELECT\n  s.seller_state,\n  AVG(\n    DATE_DIFF('SECOND', o.order_purchase_timestamp, o.order_delivered_customer_date) / 86400.0\n  ) AS avg_delivery_time\nFROM orders AS o\nJOIN sellers AS s\n  ON o.seller_id = s.seller_id\nWHERE\n  o.order_status = 'delivered' AND o.order_delivered_customer_date IS NOT NULL\nGROUP BY\n  s.seller_state",
+      "answer": "I could not answer this confidently. After 1 repair attempt the query still failed with: BinderException: Binder Error: Table \"o\" does not have a column named \"seller_id\"\n\nCandidate bindings: : \"order_id\"\n\nLINE 8:   ON o.seller_id = s.seller_id\n             ^ (stopped early: repair attempt 1 repeated an earlier query)",
+      "latency_s": 29.63,
+      "repairs": 1,
+      "input_tokens": 8756,
+      "output_tokens": 205,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "h02",
+      "difficulty": "hard",
+      "traps": [
+        "late_delivery",
+        "comparison"
+      ],
+      "question": "Do late deliveries get worse reviews?",
+      "status": "wrong",
+      "reason": "row count 1, expected 2",
+      "sql": "WITH late_orders AS (\n  SELECT\n    order_id\n  FROM orders\n  WHERE\n    order_status = 'delivered'\n    AND order_delivered_customer_date > order_estimated_delivery_date\n), review_scores AS (\n  SELECT\n    order_id,\n    review_score\n  FROM order_reviews\n)\nSELECT\n  AVG(\n    CASE\n      WHEN NOT late_orders.order_id IS NULL\n      THEN review_scores.review_score\n      ELSE NULL\n    END\n  ) AS avg_late_review_score,\n  AVG(\n    CASE WHEN late_orders.order_id IS NULL THEN review_scores.review_score ELSE NULL END\n  ) AS avg_on_time_review_score\nFROM late_orders\nFULL OUTER JOIN review_scores\n  ON late_orders.order_id = review_scores.order_id\nLIMIT 1000",
+      "answer": "Late deliveries receive an average review score of 2.57, while on-time deliveries receive an average score of 4.21. This suggests that late deliveries tend to get worse reviews.",
+      "latency_s": 28.56,
+      "repairs": 0,
+      "input_tokens": 4700,
+      "output_tokens": 197,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "h03",
+      "difficulty": "hard",
+      "traps": [
+        "late_delivery"
+      ],
+      "question": "What percentage of delivered orders arrived late?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "SELECT\n  100.0 * COUNT(\n    CASE\n      WHEN order_delivered_customer_date > order_estimated_delivery_date\n      THEN 1\n      ELSE NULL\n    END\n  ) / COUNT(order_id) AS late_delivery_percentage\nFROM orders\nWHERE\n  order_status = 'delivered' AND NOT order_delivered_customer_date IS NULL\nLIMIT 1000",
+      "answer": "8.11% of delivered orders arrived late. The calculation assumes that \"late\" is defined as arriving after the estimated delivery date.",
+      "latency_s": 14.56,
+      "repairs": 0,
+      "input_tokens": 4605,
+      "output_tokens": 101,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "h04",
+      "difficulty": "hard",
+      "traps": [
+        "late_delivery",
+        "comparison"
+      ],
+      "question": "Which 5 customer states have the highest percentage of late deliveries, among states with at least 500 delivered orders?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "WITH late_delivery AS (\n  SELECT\n    customers.customer_state,\n    COUNT(*) AS late_count\n  FROM orders\n  JOIN customers\n    ON orders.customer_id = customers.customer_id\n  WHERE\n    orders.order_status = 'delivered'\n    AND orders.order_delivered_customer_date > orders.order_estimated_delivery_date\n  GROUP BY\n    customers.customer_state\n), total_delivered AS (\n  SELECT\n    customers.customer_state,\n    COUNT(*) AS total_count\n  FROM orders\n  JOIN customers\n    ON orders.customer_id = customers.customer_id\n  WHERE\n    orders.order_status = 'delivered'\n  GROUP BY\n    customers.customer_state\n), state_late_percentage AS (\n  SELECT\n    l.customer_state,\n    (\n      l.late_count * 100.0 / t.total_count\n    ) AS late_percentage\n  FROM late_delivery AS l\n  JOIN total_delivered AS t\n    ON l.customer_state = t.customer_state\n  WHERE\n    t.total_count >= 500\n)\nSELECT\n  customer_state,\n  late_percentage\nFROM state_late_percentage\nORDER BY\n  late_percentage DESC\nLIMIT 5",
+      "answer": "The five customer states with the highest percentage of late deliveries, among states with at least 500 delivered orders, are:\n\n1. Massachusetts (MA) with 19.67%\n2. Cear\u00e1 (CE) with 15.32%\n3. Bahia (BA) with 14.04%\n4. Rio de Janeiro (RJ) with 13.47%\n5. Par\u00e1 (PA) with 12.37%\n\nThese states have the highest percentages of late deliveries relative to the total number of delivered orders in each state.",
+      "latency_s": 53.68,
+      "repairs": 0,
+      "input_tokens": 4848,
+      "output_tokens": 376,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "h05",
+      "difficulty": "hard",
+      "traps": [
+        "date_math"
+      ],
+      "question": "For each month from January to August 2018, how many orders were placed and what was the percentage change from the previous month?",
+      "status": "wrong",
+      "reason": "no agent column matches gold column 3 (values differ)",
+      "sql": "WITH monthly_orders AS (\n  SELECT\n    DATE_TRUNC('MONTH', order_purchase_timestamp) AS month,\n    COUNT(DISTINCT order_id) AS order_count\n  FROM orders\n  WHERE\n    order_purchase_timestamp >= '2018-01-01'\n    AND order_purchase_timestamp < '2018-09-01'\n  GROUP BY\n    month\n)\nSELECT\n  month,\n  order_count,\n  LAG(order_count) OVER (ORDER BY month) AS previous_month_count,\n  (\n    order_count - LAG(order_count) OVER (ORDER BY month)\n  ) * 100.0 / LAG(order_count) OVER (ORDER BY month) AS percentage_change\nFROM monthly_orders\nORDER BY\n  month\nLIMIT 1000",
+      "answer": "In January 2018, 7,269 orders were placed. From February to August, the number of orders fluctuated, with a decrease in February (-7.44%), an increase in March (7.18%), a decrease in April (-3.77%), a decrease in May (-0.95%), a decrease in June (-10.27%), an increase in July (2.03%), and an increase in August (3.50%).",
+      "latency_s": 51.09,
+      "repairs": 0,
+      "input_tokens": 5055,
+      "output_tokens": 270,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "h06",
+      "difficulty": "hard",
+      "traps": [
+        "customer_unique_id"
+      ],
+      "question": "What percentage of customers have placed more than one order?",
+      "status": "error",
+      "reason": "agent gave up: BinderException: Binder Error: Referenced column \"customer_unique_id\" not found in FROM clause!",
+      "sql": "SELECT\n  100.0 * COUNT(DISTINCT customer_unique_id) / COUNT(DISTINCT customer_id) AS percentage_of_repeat_customers\nFROM (\n  SELECT\n    customer_unique_id,\n    customer_id\n  FROM orders\n  GROUP BY\n    customer_unique_id,\n    customer_id\n  HAVING\n    COUNT(order_id) > 1\n) AS repeat_customers",
+      "answer": "I could not answer this confidently. After 2 repair attempts the query still failed with: BinderException: Binder Error: Referenced column \"customer_unique_id\" not found in FROM clause!\nCandidate bindings: \"customer_id\", \"order_id\", \"order_estimated_delivery_date\", \"order_status\", \"order_approved_at\"\n\nLINE 9:     customer_unique_id,\n            ^ (stopped early: repair attempt 2 repeated an earlier query)",
+      "latency_s": 46.09,
+      "repairs": 2,
+      "input_tokens": 13351,
+      "output_tokens": 220,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "h07",
+      "difficulty": "hard",
+      "traps": [
+        "comparison",
+        "fanout"
+      ],
+      "question": "Do orders with more than one item get different review scores than single-item orders?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "WITH single_item_orders AS (\n  SELECT\n    order_id\n  FROM order_items\n  GROUP BY\n    order_id\n  HAVING\n    COUNT(*) = 1\n), multi_item_orders AS (\n  SELECT\n    order_id\n  FROM order_items\n  GROUP BY\n    order_id\n  HAVING\n    COUNT(*) > 1\n), single_item_reviews AS (\n  SELECT\n    order_id,\n    review_score\n  FROM order_reviews\n  WHERE\n    order_id IN (\n      SELECT\n        order_id\n      FROM single_item_orders\n    )\n), multi_item_reviews AS (\n  SELECT\n    order_id,\n    review_score\n  FROM order_reviews\n  WHERE\n    order_id IN (\n      SELECT\n        order_id\n      FROM multi_item_orders\n    )\n)\nSELECT\n  'Single-item orders' AS order_type,\n  AVG(review_score) AS avg_review_score\nFROM single_item_reviews\nUNION ALL\nSELECT\n  'Multi-item orders' AS order_type,\n  AVG(review_score) AS avg_review_score\nFROM multi_item_reviews\nLIMIT 1000",
+      "answer": "Orders with more than one item tend to receive lower review scores compared to single-item orders. The average review score for single-item orders is 4.16, while for multi-item orders, it is 3.60.",
+      "latency_s": 41.43,
+      "repairs": 0,
+      "input_tokens": 4791,
+      "output_tokens": 234,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "h08",
+      "difficulty": "hard",
+      "traps": [
+        "revenue",
+        "date_math"
+      ],
+      "question": "What are the top 5 product categories by revenue in 2018, and what percentage of total 2018 revenue does each represent?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "WITH revenue_by_category AS (\n  SELECT\n    p.product_category,\n    SUM(oi.price) AS category_revenue\n  FROM order_items AS oi\n  JOIN products AS p\n    ON oi.product_id = p.product_id\n  JOIN orders AS o\n    ON oi.order_id = o.order_id\n  WHERE\n    o.order_purchase_timestamp >= '2018-01-01'\n    AND o.order_purchase_timestamp < '2019-01-01'\n  GROUP BY\n    p.product_category\n), total_revenue AS (\n  SELECT\n    SUM(category_revenue) AS total_revenue\n  FROM revenue_by_category\n)\nSELECT\n  rbc.product_category,\n  rbc.category_revenue,\n  (\n    rbc.category_revenue * 100.0 / tr.total_revenue\n  ) AS percentage_of_total_revenue\nFROM revenue_by_category AS rbc\nJOIN total_revenue AS tr\n  ON 1 = 1\nORDER BY\n  rbc.category_revenue DESC\nLIMIT 5",
+      "answer": "The top 5 product categories by revenue in 2018 were health_beauty, watches_gifts, bed_bath_table, sports_leisure, and computers_accessories. These categories represented 10.46%, 9.60%, 7.28%, 7.21%, and 6.84% of the total 2018 revenue, respectively.",
+      "latency_s": 68.75,
+      "repairs": 0,
+      "input_tokens": 4925,
+      "output_tokens": 309,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "h09",
+      "difficulty": "hard",
+      "traps": [
+        "customer_unique_id",
+        "date_math"
+      ],
+      "question": "For customers with at least two orders, what is the average number of days between their first and second order?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "WITH customer_orders AS (\n  SELECT\n    customer_unique_id,\n    order_purchase_timestamp,\n    ROW_NUMBER() OVER (PARTITION BY customer_unique_id ORDER BY order_purchase_timestamp) AS order_rank\n  FROM orders\n  JOIN customers\n    ON orders.customer_id = customers.customer_id\n), first_second_orders AS (\n  SELECT\n    customer_unique_id,\n    order_purchase_timestamp AS first_order,\n    LEAD(order_purchase_timestamp) OVER (PARTITION BY customer_unique_id ORDER BY order_purchase_timestamp) AS second_order\n  FROM customer_orders\n  WHERE\n    order_rank <= 2\n)\nSELECT\n  AVG(DATE_DIFF('DAY', first_order, second_order)) AS avg_days_between_first_second_order\nFROM first_second_orders\nWHERE\n  NOT second_order IS NULL\nLIMIT 1000",
+      "answer": "The average number of days between the first and second order for customers with at least two orders is 80.35 days.",
+      "latency_s": 41.62,
+      "repairs": 0,
+      "input_tokens": 4720,
+      "output_tokens": 198,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "h10",
+      "difficulty": "hard",
+      "traps": [
+        "fanout",
+        "comparison"
+      ],
+      "question": "Which 5 product categories have the lowest average review score, among categories with at least 500 reviews?",
+      "status": "error",
+      "reason": "agent gave up: BinderException: Binder Error: Table \"r\" does not have a column named \"product_id\"",
+      "sql": "WITH category_reviews AS (\n  SELECT\n    p.product_category,\n    AVG(r.review_score) AS avg_review_score\n  FROM order_reviews AS r\n  JOIN products AS p\n    ON r.product_id = p.product_id\n  GROUP BY\n    p.product_category\n  HAVING\n    COUNT(r.review_id) >= 500\n)\nSELECT\n  product_category,\n  avg_review_score\nFROM category_reviews\nORDER BY\n  avg_review_score ASC\nLIMIT 5",
+      "answer": "I could not answer this confidently. After 1 repair attempt the query still failed with: BinderException: Binder Error: Table \"r\" does not have a column named \"product_id\"\n\nCandidate bindings: : \"order_id\"\n\nLINE 7:     ON r.product_id = p.product_id\n               ^ (stopped early: repair attempt 1 repeated an earlier query)",
+      "latency_s": 44.41,
+      "repairs": 1,
+      "input_tokens": 8773,
+      "output_tokens": 214,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "h11",
+      "difficulty": "hard",
+      "traps": [
+        "revenue",
+        "date_math",
+        "comparison"
+      ],
+      "question": "By what percentage did revenue grow in Q1 2018 compared with Q1 2017?",
+      "status": "correct",
+      "reason": "match",
+      "sql": "WITH revenue_q1_2017 AS (\n  SELECT\n    SUM(order_items.price) AS total_revenue\n  FROM orders\n  JOIN order_items\n    ON orders.order_id = order_items.order_id\n  WHERE\n    orders.order_purchase_timestamp >= '2017-01-01'\n    AND orders.order_purchase_timestamp < '2017-04-01'\n), revenue_q1_2018 AS (\n  SELECT\n    SUM(order_items.price) AS total_revenue\n  FROM orders\n  JOIN order_items\n    ON orders.order_id = order_items.order_id\n  WHERE\n    orders.order_purchase_timestamp >= '2018-01-01'\n    AND orders.order_purchase_timestamp < '2018-04-01'\n)\nSELECT\n  (\n    revenue_q1_2018.total_revenue - revenue_q1_2017.total_revenue\n  ) / revenue_q1_2017.total_revenue * 100 AS revenue_growth_percentage\nFROM revenue_q1_2017, revenue_q1_2018\nLIMIT 1000",
+      "answer": "Revenue grew by 274.34% in Q1 2018 compared to Q1 2017.",
+      "latency_s": 55.04,
+      "repairs": 0,
+      "input_tokens": 4807,
+      "output_tokens": 263,
+      "cost_usd": 0.0
+    },
+    {
+      "id": "h12",
+      "difficulty": "hard",
+      "traps": [
+        "revenue"
+      ],
+      "question": "What percentage of total revenue comes from the top 100 sellers by revenue?",
+      "status": "error",
+      "reason": "agent gave up: BinderException: Binder Error: column \"total_revenue\" must appear in the GROUP BY clause or must be part of an aggregate function.",
+      "sql": "WITH seller_revenue AS (\n  SELECT\n    seller_id,\n    SUM(order_items.price) AS seller_revenue\n  FROM order_items\n  JOIN orders\n    ON order_items.order_id = orders.order_id\n  GROUP BY\n    seller_id\n), top_sellers AS (\n  SELECT\n    seller_id,\n    seller_revenue\n  FROM seller_revenue\n  ORDER BY\n    seller_revenue DESC\n  LIMIT 100\n), total_revenue AS (\n  SELECT\n    SUM(order_items.price) AS total_revenue\n  FROM order_items\n)\nSELECT\n  (\n    SUM(top_sellers.seller_revenue) / total_revenue.total_revenue\n  ) * 100 AS percentage_top_sellers_revenue\nFROM top_sellers, total_revenue",
+      "answer": "I could not answer this confidently. After 1 repair attempt the query still failed with: BinderException: Binder Error: column \"total_revenue\" must appear in the GROUP BY clause or must be part of an aggregate function.\nEither add it to the GROUP BY list, or use \"ANY_VALUE(total_revenue)\" if the exact value of \"total_revenue\" is not important.\n\nLINE 25:     SUM(top_sellers.seller_revenue) / total_revenue.total_revenue\n                                               ^ (stopped early: repair attempt 1 repeated an earlier query)",
+      "latency_s": 73.01,
+      "repairs": 1,
+      "input_tokens": 8873,
+      "output_tokens": 345,
+      "cost_usd": 0.0
+    }
+  ]
+}
