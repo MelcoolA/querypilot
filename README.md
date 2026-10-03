@@ -73,26 +73,52 @@ step calls one `LLM.complete()` method and one `Warehouse.run_query()` method.
 Switching from Ollama to Claude, or between datasets, is a `.env` setting,
 not a code change, which is also what makes a fair side-by-side eval possible.
 
-### The agent graph
+**Why DuckDB and Snowflake.** DuckDB is an analytical database that runs
+inside the Python process: no server, no account, the whole database is one
+file. That makes it free and instant for development and for running the
+40-question eval dozens of times. Snowflake is the cloud warehouse a real
+deployment would use. Both speak nearly the same SQL, so the same agent runs
+on either with one setting, and all 40 gold queries return identical results
+on both.
+
+### What happens when you ask a question
 
 ```mermaid
 flowchart TD
-    Q([Question]) --> GS[get_schema<br/>tables, columns, sample rows,<br/>business definitions]
-    GS --> WS[write_sql<br/>LLM, with worked examples]
-    WS --> VA{validate<br/>sqlglot guardrails}
-    VA -- valid --> EX{execute<br/>read-only, 30s timeout}
-    VA -- invalid --> RS[repair_sql<br/>LLM sees every failed attempt]
-    EX -- error --> RS
-    RS -- new SQL --> VA
-    RS -- repeats an earlier attempt --> SU
-    VA -- 3 repairs used up --> SU
-    EX -- 3 repairs used up --> SU
-    EX -- rows --> PC[pick_chart<br/>bar, line, single number,<br/>or table, by rules]
-    PC --> SU[summarize<br/>plain-English answer,<br/>assumptions, caveats]
-    SU --> A([Answer + SQL + table + chart])
+    Q([User types a question]) --> UI[Web UI<br/>sends POST /ask]
+    UI --> API[FastAPI<br/>opens a stream]
+    API --> GS
+
+    subgraph AGENT [LangGraph agent]
+        GS[get_schema<br/>tables, columns, sample rows,<br/>semantic layer, cached] --> WS[write_sql]
+        WS --> VA{validate<br/>SELECT only, known tables,<br/>add LIMIT}
+        VA -- ok --> EX[execute<br/>read-only, 30s timeout]
+        VA -- rejected --> RS[repair_sql<br/>sees every failed attempt]
+        EX -- database error --> RS
+        RS -- new SQL --> VA
+        EX -- rows --> PC[pick_chart<br/>rules, no LLM]
+        PC --> SU[summarize<br/>with computed facts]
+        RS -- repeats an earlier attempt --> SU
+        VA -- 3 repairs used up --> SU
+        EX -- 3 repairs used up --> SU
+    end
+
+    WS -. LLM call .-> LLM[(LLM<br/>Ollama or Claude)]
+    RS -. LLM call .-> LLM
+    SU -. LLM call .-> LLM
+    GS -. query .-> DB[(Warehouse<br/>DuckDB or Snowflake)]
+    EX -. query .-> DB
+
+    AGENT -. one event per step, live .-> STEPS[UI: agent steps panel]
+    SU --> RES[Result event<br/>answer, SQL, rows, chart]
+    RES --> TABS[UI tabs:<br/>Answer, Chart, Table, SQL]
 ```
 
-Each box is one function in `backend/agent/nodes.py`; `backend/agent/graph.py`
+The question enters through the web UI (or the CLI), and the API runs the
+agent, streaming one event per step so the UI shows progress live. Dotted
+lines show the only two outside systems the agent touches: the LLM (three
+steps call it) and the warehouse (schema and query). Each box inside the
+agent is one function in `backend/agent/nodes.py`; `backend/agent/graph.py`
 wires them together. The state passed between steps holds the question, the
 schema context, the SQL, every failed attempt and its error, the result rows,
 and the answer. `pick_chart` uses plain rules on the result's shape (one
