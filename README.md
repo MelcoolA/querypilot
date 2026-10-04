@@ -1,8 +1,30 @@
 # QueryPilot: Agentic Text-to-SQL Analytics
 
-Ask a business question in plain English. QueryPilot finds the right tables,
-writes SQL, checks it against seven guardrails, runs it read-only, repairs its
-own errors, and explains the answer, always showing the SQL it ran.
+## Why I built this
+
+Most people who need numbers can't write SQL, the language used to pull data
+out of a database. A sales manager who wants to know "which states bring in
+the most revenue?" has to ask a data analyst and wait, often hours or days.
+And two people asking the same question can get two different answers,
+because each analyst counts "revenue" or "customer" a little differently.
+
+I built QueryPilot to close that gap, and to learn end to end what it takes to
+make an AI agent accurate and safe enough for people to rely on. You type a
+question the way you would ask a colleague, and a few seconds later you get:
+
+1. **A plain-English answer**, for example: "São Paulo brings in R$ 5.2 million,
+   more than the next four states combined."
+2. **A chart** of the numbers.
+3. **The table** behind the chart.
+4. **The exact SQL query it ran.** You never have to read it, but it is always
+   there for anyone who is curious or wants to double-check where a number came
+   from.
+
+Behind those answers: the company's own definitions of "revenue", "customer",
+and "late delivery", written down once so everyone gets the same number; a
+read-only connection, so it can never change data; an honest "I could not
+answer this confidently" instead of a guess; and a 40-question test it has to
+pass after every change.
 
 <!-- Demo GIF: record it with docs/demo-script.md, save as docs/images/demo.gif,
      then replace the screenshot below with ![QueryPilot demo](docs/images/demo.gif) -->
@@ -33,7 +55,9 @@ before and after adding the semantic layer and the other fixes.
   72%) and took Claude from 88% to 100%.
 - **Cloud vs local:** Claude is 5 to 10x faster and gets every question
   right for under 2 cents each (about $17 per 1,000 questions). The local
-  model is free and keeps data on the machine, but tops out around 72%.
+  model is free and keeps data on the machine, but tops out around 72%. For
+  most teams the cloud model is the better choice; a local model fits when data
+  must never leave the company.
 - **Same answers on Snowflake:** the final agent scores 40/40 with Claude and
   30/40 with the local model on Snowflake (vs 40/40 and 29/40 on DuckDB), with
   all 40 gold queries checked to return identical results on both warehouses.
@@ -47,71 +71,17 @@ The full change-by-change history, including what did not help, is in
 
 ## Business impact
 
-### The problem
-
-Most people who need numbers can't write SQL, the language used to pull data
-out of a database. A sales manager who wants to know "which states bring in
-the most revenue?" has to ask a data analyst and wait, often hours or days.
-And when two people ask the same question, they can get two different answers,
-because each analyst counts "revenue" or "customer" a little differently.
-
-### What QueryPilot does
-
-You type the question the way you would ask a colleague, and a few seconds
-later you get:
-
-1. **A plain-English answer**, for example: "São Paulo brings in R$ 5.2 million,
-   more than the next four states combined."
-2. **A chart** of the numbers.
-3. **The table** behind the chart.
-4. **The exact SQL query it ran.** You never have to read it, but it is always
-   there for anyone who is curious or wants to double-check where a number came
-   from.
-
-No SQL, no waiting in a queue, and nothing hidden.
-
-### Why people can trust the answers
-
-- **It uses the company's own definitions.** What counts as "revenue", a
-  "customer", or a "late delivery" is written down once, so everyone gets the
-  same number. This matters even with the strongest AI models: without the
-  written definitions, Claude reported revenue growth of 282% instead of 274%,
-  because it picked its own reasonable but different definition of revenue.
-- **It shows its work.** Every answer comes with the numbers, the chart, and
-  the query, so nothing is a black box.
-- **It says when it doesn't know.** If it can't answer confidently, it says so
-  instead of guessing.
-- **It can't change anything.** It only reads data. A request like "delete all
-  canceled orders" is refused.
-- **It is tested like software.** On 40 business questions with known correct
-  answers, it answers all 40 correctly with Claude, both on a laptop database
-  and on Snowflake.
-
 ### What it costs and saves
 
-Measured: with Claude, an answer takes about 3 seconds and costs about 2 cents.
-
-As an illustration (the assumptions are made up, the order of magnitude is the
-point): if an analyst spends 15 minutes on a routine question at $60 an hour,
-each one costs the business about $15. A team asking 500 routine questions a
+With Claude, an answer takes about 3 seconds and costs about 2 cents (see
+Results above). As an illustration (the assumptions are made up, the order of
+magnitude is the point): if an analyst spends 15 minutes on a routine question
+at $60 an hour, each one costs the business about $15. A team asking 500 routine questions a
 month spends about $7,500 of analyst time, against about $9 with QueryPilot.
 The analysts keep their time for the questions that really need a person.
 
 Costs can't run away either: every query stops after 30 seconds, and the cloud
 warehouse switches itself off when idle and has a monthly spending cap.
-
-### Cloud AI or a model on your own computer?
-
-| | Claude (cloud) | Local model (runs on your own machine) |
-|---|---|---|
-| Correct answers (40 questions) | 40 | 29 to 30 |
-| Typical time per answer | about 3 seconds | about 13 seconds |
-| Cost per answer | about 2 cents | free |
-| Data leaves the company | yes, to the AI provider | no |
-
-For most teams the cloud model is the better choice. A local model makes sense
-when data must never leave the company, as long as it answers that team's real
-questions correctly often enough.
 
 ### How a company would roll it out
 
@@ -279,9 +249,7 @@ make data-olist
 make data
 ```
 
-[Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) is about
-100k real orders from a Brazilian marketplace (2016 to 2018). The load script
-gives tables short names, stores dates as timestamps, joins English category
+The load script (see [Data credit](#data-credit) for the dataset) gives tables short names, stores dates as timestamps, joins English category
 names into `products`, and reduces geolocation to one row per zip prefix so
 joins don't multiply rows.
 
@@ -411,18 +379,9 @@ make ui                               # http://localhost:3000
 ```
 
 Type a question or click an example. The agent's steps appear as they
-happen, then the result in four tabs:
-
-- **Answer:** the plain-English answer, with a reminder to check its numbers.
-- **Chart:** a bar, line, or single-number view, chosen by `pick_chart`.
-  Colors come from a palette validated for color-blind readers in both light
-  and dark mode.
-- **Table:** every row, numbers formatted and right-aligned, with a note when
-  the result was cut off at the 1,000-row limit.
-- **SQL:** the exact query that ran, with a copy button.
-
-The status badge shows the model, the dataset, and whether the local model
-has finished warming up.
+happen, then the result opens in the Answer, Chart, Table, and SQL tabs (see
+[The web UI](#the-web-ui)). The status badge shows the model, the dataset, and
+whether the local model has finished warming up.
 
 ### Use it from Claude Desktop (MCP)
 
