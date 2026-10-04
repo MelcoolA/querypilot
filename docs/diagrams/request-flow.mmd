@@ -1,0 +1,28 @@
+flowchart TD
+    Q([User types a question]) --> UI[Web UI<br/>sends POST /ask]
+    UI --> API[FastAPI<br/>opens a stream]
+    API --> GS
+
+    subgraph AGENT [LangGraph agent]
+        GS[get_schema<br/>tables, columns, sample rows,<br/>semantic layer, cached] --> WS[write_sql]
+        WS --> VA{validate<br/>SELECT only, known tables,<br/>add LIMIT}
+        VA -- ok --> EX[execute<br/>read-only, 30s timeout]
+        VA -- rejected --> RS[repair_sql<br/>sees every failed attempt]
+        EX -- database error --> RS
+        RS -- new SQL --> VA
+        EX -- rows --> PC[pick_chart<br/>rules, no LLM]
+        PC --> SU[summarize<br/>with computed facts]
+        RS -- repeats an earlier attempt --> SU
+        VA -- 3 repairs used up --> SU
+        EX -- 3 repairs used up --> SU
+    end
+
+    WS -. LLM call .-> LLM[(LLM<br/>Ollama or Claude)]
+    RS -. LLM call .-> LLM
+    SU -. LLM call .-> LLM
+    GS -. query .-> DB[(Warehouse<br/>DuckDB or Snowflake)]
+    EX -. query .-> DB
+
+    AGENT -. one event per step, live .-> STEPS[UI: agent steps panel]
+    SU --> RES[Result event<br/>answer, SQL, rows, chart]
+    RES --> TABS[UI tabs:<br/>Answer, Chart, Table, SQL]

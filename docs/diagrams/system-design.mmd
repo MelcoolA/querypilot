@@ -1,0 +1,30 @@
+flowchart TD
+    subgraph IN [Ways in]
+        U([Business user]) --> UI[Web UI<br/>Next.js]
+        UI --> API[FastAPI /ask<br/>streams steps]
+        U --> CLI[CLI]
+        MC([Claude Desktop or<br/>any MCP client]) --> MCP[MCP server]
+        EV[Eval runner<br/>40 gold questions]
+    end
+
+    API --> AG
+    CLI --> AG
+    MCP --> AG
+    EV --> AG
+
+    AG[LangGraph agent]
+
+    subgraph USES [What the agent uses]
+        SEM[Semantic layer<br/>business definitions]
+        VAL[SQL validator<br/>sqlglot guardrails]
+        LLM[LLM layer] --> OL[Ollama<br/>qwen2.5-coder 7B, local]
+        LLM --> CL[Claude API<br/>Sonnet 5.5]
+        WH[Warehouse layer] --> D1[(DuckDB<br/>Olist, local file)]
+        WH --> SF[(Snowflake<br/>Olist, read-only role)]
+    end
+
+    AG --> SEM
+    AG --> VAL
+    AG --> LLM
+    AG --> WH
+    AG -.-> LS[LangSmith<br/>traces, optional]

@@ -125,27 +125,10 @@ again before anyone relies on it.
 
 ### System design
 
-```mermaid
-flowchart LR
-    U([Business user]) --> UI[Web UI<br/>Next.js, frontend/]
-    U --> CLI[CLI<br/>backend/cli.py]
-    UI --> API[FastAPI /ask<br/>streams steps]
-    CLI --> AG[LangGraph agent<br/>backend/agent]
-    API --> AG
-    EV[Eval runner<br/>evals/] --> AG
-    AG --> SEM[Semantic layer<br/>semantic/olist.yaml]
-    AG --> VAL[SQL validator<br/>sqlglot]
-    AG --> LLM[LLM layer<br/>backend/llm]
-    LLM --> OL[Ollama<br/>qwen2.5-coder 7B]
-    LLM --> CL[Claude API<br/>Sonnet 5.5]
-    AG --> WH[Warehouse layer<br/>backend/warehouse]
-    WH --> D1[(DuckDB<br/>Olist)]
-    WH --> D2[(DuckDB<br/>TPC-H)]
-    WH --> SF[(Snowflake<br/>Olist, read-only role)]
-    AG -.-> LS[LangSmith<br/>traces, optional]
-    MC([Claude Desktop or any<br/>MCP client]) --> MCP[MCP server<br/>backend/mcp_server.py]
-    MCP --> AG
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/system-design-dark.png">
+  <img alt="System design: the web UI, CLI, MCP server, and eval runner all call the LangGraph agent, which uses the semantic layer, the SQL validator, the LLM layer (Ollama or Claude), and the warehouse layer (DuckDB or Snowflake)" src="docs/images/system-design-light.png">
+</picture>
 
 Two small interfaces keep the agent independent of its providers. Every agent
 step calls one `LLM.complete()` method and one `Warehouse.run_query()` method.
@@ -162,36 +145,10 @@ on both.
 
 ### What happens when you ask a question
 
-```mermaid
-flowchart TD
-    Q([User types a question]) --> UI[Web UI<br/>sends POST /ask]
-    UI --> API[FastAPI<br/>opens a stream]
-    API --> GS
-
-    subgraph AGENT [LangGraph agent]
-        GS[get_schema<br/>tables, columns, sample rows,<br/>semantic layer, cached] --> WS[write_sql]
-        WS --> VA{validate<br/>SELECT only, known tables,<br/>add LIMIT}
-        VA -- ok --> EX[execute<br/>read-only, 30s timeout]
-        VA -- rejected --> RS[repair_sql<br/>sees every failed attempt]
-        EX -- database error --> RS
-        RS -- new SQL --> VA
-        EX -- rows --> PC[pick_chart<br/>rules, no LLM]
-        PC --> SU[summarize<br/>with computed facts]
-        RS -- repeats an earlier attempt --> SU
-        VA -- 3 repairs used up --> SU
-        EX -- 3 repairs used up --> SU
-    end
-
-    WS -. LLM call .-> LLM[(LLM<br/>Ollama or Claude)]
-    RS -. LLM call .-> LLM
-    SU -. LLM call .-> LLM
-    GS -. query .-> DB[(Warehouse<br/>DuckDB or Snowflake)]
-    EX -. query .-> DB
-
-    AGENT -. one event per step, live .-> STEPS[UI: agent steps panel]
-    SU --> RES[Result event<br/>answer, SQL, rows, chart]
-    RES --> TABS[UI tabs:<br/>Answer, Chart, Table, SQL]
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/request-flow-dark.png">
+  <img alt="What happens when you ask a question: the web UI sends it to the API, the agent reads the schema, writes SQL, validates it, runs it, repairs it if needed, picks a chart, and summarizes; each step streams to the UI, then the answer, SQL, table, and chart appear in tabs" src="docs/images/request-flow-light.png">
+</picture>
 
 The question enters through the web UI (or the CLI), and the API runs the
 agent, streaming one event per step so the UI shows progress live. Dotted
